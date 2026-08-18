@@ -6,7 +6,7 @@ Prototipo di calcolatore della retribuzione **netta annuale e mensile** a partir
 **Anno d'imposta 2026.** Caso modellato: impiegato a tempo indeterminato, residente a
 Milano, senza agevolazioni né familiari a carico.
 
-> 🔗 **Demo live:** _<inserire l'URL di GitHub Pages dopo il primo deploy>_
+> 🔗 **Demo live:** <https://federicopeccipersonal.github.io/calcolatore-ral/>
 
 ---
 
