@@ -553,6 +553,26 @@ main { padding-block: 32px 56px; }
   color: var(--testo);
 }
 
+/* Spiegazione in linguaggio comune: apre ogni card e risponde alla domanda
+   "questa trattenuta a cosa serve?" prima di mostrare i numeri.               */
+
+.spiegazione {
+  max-width: 80ch;
+  margin: 0 0 18px;
+  padding: 15px 17px;
+  border: 1px solid color-mix(in srgb, var(--accento) 20%, transparent);
+  border-radius: var(--raggio-piccolo);
+  background: var(--accento-tenue);
+  font-size: .9375rem;
+  line-height: 1.62;
+  color: var(--testo-tenue);
+}
+
+.spiegazione strong { color: var(--testo); font-weight: 620; }
+.spiegazione em { font-style: normal; text-decoration: underline; text-underline-offset: 2px; }
+
+.corpo-dettaglio { padding: 0; }
+
 .sommario-valore--trattenuta { color: var(--negativo); }
 .sommario-valore--beneficio  { color: var(--positivo); }
 
@@ -688,17 +708,3 @@ a { color: var(--accento); text-decoration-thickness: 1px; text-underline-offset
 }
 
 .esito-inverso--avvertenza strong { color: var(--c-contributi); }
-
-/* ---------- Grafico ---------- */
-
-.grafico { margin-top: 18px; }
-.grafico svg { display: block; width: 100%; height: auto; }
-
-.grafico .griglia-linea { stroke: var(--bordo); stroke-width: 1; }
-.grafico .asse-testo { fill: var(--testo-debole); font-size: 10px; font-family: inherit; }
-.grafico .serie-netto { fill: none; stroke: var(--c-netto); stroke-width: 2; }
-.grafico .serie-marginale { fill: none; stroke: var(--c-irpef); stroke-width: 2; }
-.grafico .marcatore { stroke: var(--testo); stroke-width: 1; stroke-dasharray: 3 3; opacity: .55; }
-.grafico .soglia { stroke: var(--c-addizionali); stroke-width: 1; stroke-dasharray: 2 3; opacity: .8; }
-.grafico .soglia-negativa { stroke: var(--negativo); stroke-width: 1.5; opacity: .85; }
-.grafico .pannello-titolo { fill: var(--testo-tenue); font-size: 10px; font-weight: 600; letter-spacing: .05em; }

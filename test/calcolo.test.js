@@ -21,7 +21,6 @@ import {
   addizionaleComunale,
   calcolaNetto,
   ralPerNettoAnnuo,
-  curvaNetto,
   discontinuita,
 } from '../src/calcolo.js';
 
@@ -308,12 +307,6 @@ test('calcolo inverso: il netto obiettivo e\' sempre raggiunto o superato, mai m
 // Curva e aliquota marginale
 // -----------------------------------------------------------------------------
 
-test('curva: copre l\'intervallo richiesto con il passo richiesto', () => {
-  const punti = curvaNetto(R, { da: 0, a: 10000, passo: 1000 });
-  assert.equal(punti.length, 11);
-  assert.equal(punti[0].ral, 0);
-  assert.equal(punti.at(-1).ral, 10000);
-});
 
 test('il modello ha esattamente le sei discontinuita\' note', () => {
   // Ogni soglia della normativa che non sia un raccordo continuo produce un
@@ -351,35 +344,6 @@ test('il modello ha esattamente le sei discontinuita\' note', () => {
   assert.equal(cheRiduconoIlNetto.length, 3, 'tre soglie fanno scendere il netto');
 });
 
-test('curva: le anomalie dell\'aliquota marginale cadono sulle soglie note', () => {
-  const soglieNote = [9361, 16519, 22025, 25328, 27531, 38543];
-  const punti = curvaNetto(R, { da: 0, a: 130000, passo: 50, delta: 50 });
-  // Anomalia = fuori da [0, 1]: sopra 1 un aumento di lordo riduce il netto,
-  // sotto 0 il netto cresce piu' del lordo. Valori dentro l'intervallo sono
-  // tutti economicamente normali, compreso il 2,7% marginale delle RAL molto
-  // basse, dove la somma integrativa al 7,1% compensa quasi tutto l'INPS.
-  const anomale = punti.filter((p) => p.aliquotaMarginale > 1 || p.aliquotaMarginale < 0);
-
-  assert.ok(anomale.length > 0, 'la curva deve rendere rilevabili le discontinuita\'');
-  for (const p of anomale) {
-    const vicina = soglieNote.some((s) => Math.abs(p.ral - s) <= 100);
-    assert.ok(
-      vicina,
-      `aliquota marginale anomala (${p.aliquotaMarginale.toFixed(3)}) a RAL ${p.ral}, ` +
-        'lontano da ogni soglia nota',
-    );
-  }
-});
-
-test('curva: fuori dalle soglie l\'aliquota marginale sta in un intervallo plausibile', () => {
-  const punti = curvaNetto(R, { da: 42000, a: 90000, passo: 500 });
-  for (const p of punti) {
-    assert.ok(
-      p.aliquotaMarginale > 0.3 && p.aliquotaMarginale < 0.75,
-      `aliquota marginale implausibile (${p.aliquotaMarginale}) a RAL ${p.ral}`,
-    );
-  }
-});
 
 test('calcolo inverso: segnala i netti che nessuna RAL puo\' produrre', () => {
   // Il gradino verso l'alto a 8.500 euro di reddito complessivo (dove scatta la

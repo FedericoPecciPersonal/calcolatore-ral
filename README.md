@@ -16,11 +16,13 @@ Milano, senza agevolazioni né familiari a carico.
 
 - **Netto annuo** e **netto mensile** (su 12, 13 o 14 mensilità).
 - Il **calcolo inverso**: dato un netto mensile obiettivo, la RAL più bassa che lo produce.
-- Il **grafico dell'aliquota marginale**, dove si vedono i sei gradini del sistema.
 - La **catena completa delle trattenute**, voce per voce e nell'ordine in cui si applicano,
   con il progressivo che scende dalla RAL al netto.
 - Il **dettaglio ispezionabile** di ogni blocco: contributi INPS, IRPEF per scaglione,
   detrazioni, addizionali locali — ciascuno con la formula usata e la fonte normativa.
+- Per ogni blocco, una **spiegazione in linguaggio comune** di cosa sia quella trattenuta e
+  a cosa serva: la pagina è pensata perché un lavoratore capisca la propria busta paga,
+  non solo perché i conti tornino.
 - Il **costo per l'azienda**, per dare la misura del cuneo complessivo.
 
 Ogni scenario è condivisibile: lo stato vive nella querystring
@@ -79,7 +81,7 @@ src/calcolo.js        motore di calcolo — funzioni pure, nessun accesso al DOM
 src/ui.js             unico file che tocca il DOM
 index.html            pagina
 style.css             stili (tema chiaro e scuro, nessun font remoto)
-test/calcolo.test.js  35 test con il runner integrato di Node
+test/calcolo.test.js  32 test con il runner integrato di Node
 .github/workflows/    CI: i test girano a ogni push
 docs/                 fonti normative e casi di prova calcolati a mano
 ```
@@ -142,10 +144,13 @@ Il caso più vistoso resta Milano: l'esenzione è una **soglia**, non una franch
 superati 23.000 € di imponibile lo 0,80% colpisce l'intero importo. Attorno a una RAL di
 25.328 € tre euro di lordo in più costano circa 184 € di netto.
 
-Il grafico dell'aliquota marginale in pagina esiste per rendere visibile esattamente
-questo, e il test `il modello ha esattamente le sei discontinuità note` fissa posizione e
-verso di ognuna: se una modifica futura ne sposta una, il test la intercetta invece di
-lasciarla passare per una correzione.
+Il grafico dell'aliquota marginale che ha portato alla scoperta è stato poi **rimosso
+dall'interfaccia**: la pagina è pensata per un lavoratore che vuole capire la propria busta
+paga, non per l'analisi quantitativa, e un grafico a due pannelli chiedeva più di quanto
+restituisse a quel lettore. La scoperta però non se n'è andata con lui: il test
+`il modello ha esattamente le sei discontinuità note` fissa posizione e verso di ognuna, e
+se una modifica futura ne sposta una il test la intercetta invece di lasciarla passare per
+una correzione.
 
 **Due conseguenze pratiche sul calcolo inverso**, entrambe gestite esplicitamente:
 
@@ -172,7 +177,7 @@ dedicata proprio per non usare `Math.round` per distrazione.
 
 ## Verifica
 
-- **35 test** sul motore di calcolo, eseguiti dalla CI a ogni push: unità sulle singole
+- **32 test** sul motore di calcolo, eseguiti dalla CI a ogni push: unità sulle singole
   funzioni, comportamento ai confini di ogni scaglione e soglia, cinque scenari completi
   confrontati con i calcoli fatti a mano, l'insieme esatto delle sei discontinuità, andata
   e ritorno del calcolo inverso, e proprietà strutturali verificate su tutte le RAL da 0 a

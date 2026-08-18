@@ -6,7 +6,7 @@
  */
 
 import { REGOLE_2026 as REGOLE } from './regole-2026.js';
-import { calcolaNetto, ralPerNettoAnnuo, curvaNetto, discontinuita } from './calcolo.js';
+import { calcolaNetto, ralPerNettoAnnuo } from './calcolo.js';
 
 // -----------------------------------------------------------------------------
 // Formattazione
@@ -455,109 +455,6 @@ function renderCostoAzienda(r) {
 // -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
-// Grafico
-// -----------------------------------------------------------------------------
-
-/**
- * Due pannelli sovrapposti che condividono l'asse delle RAL: il netto annuo
- * sopra, l'aliquota marginale sotto. Il netto e' quasi una retta e da solo non
- * dice niente; e' la curva marginale che rende visibili i gradini del sistema.
- *
- * SVG inline costruita a mano: nessuna libreria di grafici, e i colori arrivano
- * dalle variabili CSS, quindi il grafico segue il tema chiaro/scuro.
- */
-function renderGrafico(r) {
-  const ralCorrente = r.input.ral;
-  const xMax = Math.max(120000, Math.ceil((ralCorrente * 1.25) / 20000) * 20000);
-
-  const punti = curvaNetto(REGOLE, {
-    da: 0,
-    a: xMax,
-    passo: Math.max(100, Math.round(xMax / 450)),
-    mensilita: r.input.mensilita,
-  });
-  const salti = discontinuita(REGOLE, { da: 0, a: Math.min(xMax, 130000) });
-
-  const L = 62, R_ = 16, W = 900;
-  const aTop = 26, aH = 148;
-  const bTop = 222, bH = 108;
-  const H = 372;
-  const xw = W - L - R_;
-
-  const nettoMax = Math.max(...punti.map((p) => p.netto));
-  const yMaxNetto = Math.max(20000, Math.ceil(nettoMax / 20000) * 20000);
-
-  const x = (ral) => L + (ral / xMax) * xw;
-  const yA = (v) => aTop + aH - (v / yMaxNetto) * aH;
-  const yB = (v) => bTop + bH - Math.min(Math.max(v, 0), 1) * bH;
-
-  const percorso = (accessoreY, accessoreV) =>
-    punti
-      .map((p, i) => `${i ? 'L' : 'M'}${x(p.ral).toFixed(1)} ${accessoreY(accessoreV(p)).toFixed(1)}`)
-      .join(' ');
-
-  const pezzi = [];
-
-  // Titoli dei pannelli
-  pezzi.push(`<text class="pannello-titolo" x="${L}" y="${aTop - 10}">NETTO ANNUO</text>`);
-  pezzi.push(`<text class="pannello-titolo" x="${L}" y="${bTop - 10}">ALIQUOTA MARGINALE</text>`);
-
-  // Griglia e scala del pannello superiore
-  for (let i = 0; i <= 4; i++) {
-    const valore = (yMaxNetto / 4) * i;
-    const y = yA(valore);
-    pezzi.push(`<line class="griglia-linea" x1="${L}" y1="${y.toFixed(1)}" x2="${W - R_}" y2="${y.toFixed(1)}"/>`);
-    pezzi.push(`<text class="asse-testo" x="${L - 8}" y="${(y + 3).toFixed(1)}" text-anchor="end">${num(valore / 1000)}k</text>`);
-  }
-
-  // Griglia e scala del pannello inferiore
-  for (let i = 0; i <= 4; i++) {
-    const valore = i / 4;
-    const y = yB(valore);
-    pezzi.push(`<line class="griglia-linea" x1="${L}" y1="${y.toFixed(1)}" x2="${W - R_}" y2="${y.toFixed(1)}"/>`);
-    pezzi.push(`<text class="asse-testo" x="${L - 8}" y="${(y + 3).toFixed(1)}" text-anchor="end">${Math.round(valore * 100)}%</text>`);
-  }
-
-  // Soglie: tratteggiate su entrambi i pannelli, in rosso quelle che riducono il netto
-  for (const salto of salti) {
-    if (salto.ral > xMax) continue;
-    const classe = salto.riduceIlNetto ? 'soglia-negativa' : 'soglia';
-    const px = x(salto.ral).toFixed(1);
-    pezzi.push(`<line class="${classe}" x1="${px}" y1="${aTop}" x2="${px}" y2="${aTop + aH}"/>`);
-    pezzi.push(`<line class="${classe}" x1="${px}" y1="${bTop}" x2="${px}" y2="${bTop + bH}"/>`);
-  }
-
-  // Serie
-  pezzi.push(`<path class="serie-netto" d="${percorso(yA, (p) => p.netto)}"/>`);
-  pezzi.push(`<path class="serie-marginale" d="${percorso(yB, (p) => p.aliquotaMarginale)}"/>`);
-
-  // Marcatore della RAL corrente
-  const pxCorrente = x(ralCorrente);
-  if (ralCorrente <= xMax) {
-    pezzi.push(`<line class="marcatore" x1="${pxCorrente.toFixed(1)}" y1="${aTop}" x2="${pxCorrente.toFixed(1)}" y2="${bTop + bH}"/>`);
-    pezzi.push(`<circle cx="${pxCorrente.toFixed(1)}" cy="${yA(r.nettoAnnuo).toFixed(1)}" r="4" fill="var(--c-netto)"/>`);
-    const ancora = pxCorrente > W - 120 ? 'end' : 'start';
-    const dx = ancora === 'end' ? -8 : 8;
-    pezzi.push(`<text class="asse-testo" x="${(pxCorrente + dx).toFixed(1)}" y="${(aTop + 12).toFixed(1)}" text-anchor="${ancora}" style="font-weight:600">RAL ${num(ralCorrente)} €</text>`);
-  }
-
-  // Asse delle RAL
-  for (let v = 0; v <= xMax; v += xMax / 6) {
-    pezzi.push(`<text class="asse-testo" x="${x(v).toFixed(1)}" y="${H - 8}" text-anchor="middle">${num(v / 1000)}k</text>`);
-  }
-
-  el('grafico').innerHTML =
-    `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Netto annuo e aliquota marginale al variare della RAL">${pezzi.join('')}</svg>`;
-
-  const cheRiducono = salti.filter((s) => s.riduceIlNetto).length;
-  el('legenda-grafico').innerHTML = `
-    <li><span class="pallino" style="background:var(--c-netto)"></span><span>Netto annuo</span></li>
-    <li><span class="pallino" style="background:var(--c-irpef)"></span><span>Aliquota marginale</span></li>
-    <li><span class="pallino" style="background:var(--negativo)"></span><span>${cheRiducono} soglie che <em>riducono</em> il netto</span></li>
-    <li><span class="pallino" style="background:var(--c-addizionali)"></span><span>${salti.length - cheRiducono} soglie a gradino verso l'alto</span></li>`;
-}
-
-// -----------------------------------------------------------------------------
 // Modalita' e stato nell'URL
 // -----------------------------------------------------------------------------
 
@@ -644,9 +541,11 @@ function renderEsitoInverso(esito, obiettivoMensile, mensilita) {
   ];
 
   if (esito.oltreObiettivo) {
-    righe.push(`<p class="nota">Quel netto esatto non è ottenibile da nessuna RAL: la RAL
-      trovata è la prima che lo supera, di ${euro2(esito.scostamento)}. È l'effetto di una
-      delle soglie a gradino del sistema — le trovi marcate nel grafico più sotto.</p>`);
+    righe.push(`<p class="nota">Quel netto esatto non è ottenibile da nessuna RAL: quella
+      trovata è la prima che lo supera, di ${euro2(esito.scostamento)}. Dipende dal fatto che
+      alcune agevolazioni non crescono in modo graduale ma scattano di colpo al superamento di
+      una soglia di reddito: intorno a quel punto il netto fa un salto, e i valori dentro il
+      salto non corrispondono a nessuno stipendio lordo.</p>`);
   } else {
     righe.push(`<p class="nota">È la RAL più bassa che soddisfa il vincolo, quindi la meno
       costosa per il datore.</p>`);
@@ -756,7 +655,6 @@ function calcolaEMostra() {
   renderKpi(r);
   renderBarra(r);
   renderCascata(r);
-  renderGrafico(r);
   renderDettaglioInps(r);
   renderDettaglioIrpef(r);
   renderDettaglioDetrazioni(r);

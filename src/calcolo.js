@@ -445,41 +445,6 @@ export function ralPerNettoAnnuo(nettoObiettivo, regole, opzioni = {}) {
   };
 }
 
-// -----------------------------------------------------------------------------
-// CAMPIONAMENTO DELLA CURVA
-// -----------------------------------------------------------------------------
-
-/**
- * Campiona il modello su un intervallo di RAL restituendo, per ogni punto, il
- * netto e l'ALIQUOTA MARGINALE: la quota di ogni euro aggiuntivo di lordo che
- * non arriva al dipendente.
- *
- * L'aliquota marginale e' la grandezza che rende visibili le discontinuita' del
- * sistema. Dove supera il 100% un aumento di lordo RIDUCE il netto: e' il caso
- * della soglia comunale di Milano.
- */
-export function curvaNetto(regole, opzioni = {}) {
-  const da = opzioni.da ?? 0;
-  const a = opzioni.a ?? 100000;
-  const passo = opzioni.passo ?? 250;
-  const delta = opzioni.delta ?? 50;
-
-  const punti = [];
-  for (let ral = da; ral <= a; ral += passo) {
-    const nettoQui = calcolaNetto(ral, regole, opzioni).nettoAnnuo;
-    const nettoDopo = calcolaNetto(ral + delta, regole, opzioni).nettoAnnuo;
-    const guadagnoMarginale = (nettoDopo - nettoQui) / delta;
-
-    punti.push({
-      ral,
-      netto: nettoQui,
-      aliquotaMarginale: 1 - guadagnoMarginale,
-    });
-  }
-
-  return punti;
-}
-
 /**
  * Individua le RAL in cui il netto SALTA: le soglie della normativa che non sono
  * raccordi continui ma gradini.

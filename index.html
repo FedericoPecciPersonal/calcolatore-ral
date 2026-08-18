@@ -125,19 +125,6 @@
       </table>
     </div>
 
-    <!-- Grafico -->
-    <div class="scheda">
-      <h2>Come cambia il netto al variare della RAL</h2>
-      <p class="descrizione">
-        Sopra: il netto annuo. Sotto: l'<strong>aliquota marginale</strong>, cioè la quota di
-        ogni euro aggiuntivo di lordo che non arriva al dipendente. È la curva dove si vedono
-        le sei soglie del sistema — e le tre in cui aumentare il lordo fa
-        <em>scendere</em> il netto.
-      </p>
-      <div class="grafico" id="grafico"></div>
-      <ul class="legenda" id="legenda-grafico"></ul>
-    </div>
-
     <!-- Dettagli -->
     <div class="pila-dettagli">
       <p class="descrizione descrizione--pila">
@@ -149,34 +136,52 @@
           <h2>Contributi INPS</h2>
           <span class="sommario-valore" id="sommario-inps"></span>
         </summary>
-        <div id="dettaglio-inps"></div>
+        <div class="corpo-dettaglio">
+          <p class="spiegazione"><strong>A cosa servono.</strong> Sono i versamenti che costruiscono la tua <strong>pensione futura</strong>. A differenza delle imposte non sono soldi che spariscono: accreditano contributi sulla tua posizione previdenziale. E la tua quota è solo una parte del totale — tu versi il 9,19%, il tuo datore di lavoro ne versa un altro 23,81% sulla stessa retribuzione. Sulla tua pensione finisce quindi molto più di quello che vedi trattenuto in busta paga. L'1% in più si paga solo sulla parte di stipendio che supera 56.224 € l'anno.</p>
+          <div id="dettaglio-inps"></div>
+        </div>
       </details>
       <details class="dettaglio">
         <summary>
           <h2>IRPEF per scaglione</h2>
           <span class="sommario-valore" id="sommario-irpef"></span>
         </summary>
-        <div id="dettaglio-irpef"></div>
+        <div class="corpo-dettaglio">
+          <p class="spiegazione"><strong>A cosa serve.</strong> È l'imposta principale sul reddito: finanzia la spesa pubblica — sanità, scuola, trasporti. Si calcola <strong>a scaglioni</strong>, e qui nasce l'equivoco più diffuso: superare 28.000 € <em>non</em> significa pagare il 33% su tutto lo stipendio. I primi 28.000 € restano tassati al 23%, e solo la parte eccedente paga il 33%. Un aumento di stipendio non può farti guadagnare meno "per colpa dello scaglione".</p>
+          <div id="dettaglio-irpef"></div>
+        </div>
       </details>
       <details class="dettaglio">
         <summary>
           <h2>Detrazioni e integrazioni</h2>
           <span class="sommario-valore" id="sommario-detrazioni"></span>
         </summary>
-        <div id="dettaglio-detrazioni"></div>
+        <div class="corpo-dettaglio">
+          <p class="spiegazione"><strong>A cosa servono.</strong> Sono gli sconti che <strong>abbassano l'imposta</strong> già calcolata. Il datore di lavoro le applica da sé ogni mese: non devi chiederle né presentare domanda. La detrazione da lavoro dipendente vale fino a 1.955 € e si riduce man mano che il reddito sale, fino ad azzerarsi a 50.000 €: è il motivo per cui le tasse crescono più in fretta dello stipendio. Il trattamento integrativo e la somma integrativa sono invece <strong>soldi aggiunti al netto</strong> e non tassati, previsti solo per i redditi più bassi.</p>
+          <div id="dettaglio-detrazioni"></div>
+        </div>
       </details>
       <details class="dettaglio">
         <summary>
           <h2>Addizionali locali</h2>
           <span class="sommario-valore" id="sommario-addizionali"></span>
         </summary>
-        <div id="dettaglio-addizionali"></div>
+        <div class="corpo-dettaglio">
+          <p class="spiegazione"><strong>A cosa servono.</strong> Sono la parte dell'imposta sul reddito che <strong>resta sul territorio</strong>: la regionale finanzia la Lombardia, in gran parte la sanità; la comunale finanzia il Comune di Milano. Si pagano sullo stesso reddito dell'IRPEF, ma con aliquote molto più basse. Occhio alla soglia di Milano: fino a 23.000 € di imponibile non paghi nulla, ma appena la superi lo 0,80% si applica <em>su tutto</em> l'importo, non solo sulla parte in più.</p>
+          <div id="dettaglio-addizionali"></div>
+        </div>
       </details>
     </div>
 
     <!-- Costo azienda -->
     <div class="scheda">
       <h2>Dall'altra parte: quanto costa all'azienda</h2>
+      <p class="spiegazione">
+        <strong>Perché ti riguarda.</strong> Quello che l'azienda spende per te è molto più
+        del tuo lordo: oltre alla RAL versa i contributi a suo carico e accantona il TFR, che
+        riceverai alla fine del rapporto. È il numero da avere in mente in una trattativa,
+        perché è il costo reale su cui ragiona chi ti assume.
+      </p>
       <p class="descrizione">
         Stima <strong>prudenziale</strong>: include la quota INPS a carico del datore e
         l'accantonamento TFR. Sono escluse le contribuzioni minori (CUAF, CIGS, DS) e il premio
