@@ -28,29 +28,45 @@
 
   <!-- ===================== INPUT ===================== -->
   <form id="modulo" class="scheda scheda--input" novalidate>
-    <div class="griglia-input">
-      <div class="campo">
-        <label for="ral">Retribuzione annua lorda (RAL)</label>
+    <div class="barra-controlli">
+
+      <div class="controllo controllo--principale">
+        <label for="ral">Retribuzione annua lorda</label>
         <div class="input-valuta">
           <span aria-hidden="true">€</span>
           <input type="number" id="ral" name="ral" value="35000" min="0" max="1000000" step="100"
                  inputmode="numeric" autocomplete="off" required>
         </div>
-        <p class="aiuto">Importo su base annua, comprensivo delle mensilità aggiuntive.</p>
       </div>
 
-      <div class="campo">
-        <label for="mensilita">Mensilità</label>
-        <select id="mensilita" name="mensilita">
-          <option value="12">12</option>
-          <option value="13" selected>13</option>
-          <option value="14">14</option>
-        </select>
-        <p class="aiuto">Incide sul netto mensile, non sul totale annuo.</p>
+      <fieldset class="controllo controllo--segmentato">
+        <legend>Mensilità</legend>
+        <div class="segmenti" role="radiogroup" aria-label="Numero di mensilità">
+          <input type="radio" name="mensilita" id="m12" value="12">
+          <label for="m12">12</label>
+          <input type="radio" name="mensilita" id="m13" value="13" checked>
+          <label for="m13">13</label>
+          <input type="radio" name="mensilita" id="m14" value="14">
+          <label for="m14">14</label>
+        </div>
+      </fieldset>
+
+      <div class="controllo controllo--azione">
+        <button type="submit" class="bottone">Calcola</button>
       </div>
 
-      <button type="submit" class="bottone">Calcola</button>
     </div>
+
+    <div class="riga-aiuto">
+      <p class="aiuto">
+        Importo annuo comprensivo delle mensilità aggiuntive. Il numero di mensilità
+        incide sul netto mensile, non sul totale annuo.
+      </p>
+      <p class="segnale-obsoleto" id="segnale-obsoleto" hidden>
+        <span aria-hidden="true">●</span> Valori non aggiornati — premi Calcola
+      </p>
+    </div>
+
     <p id="errore" class="errore" role="alert" hidden></p>
   </form>
 
@@ -103,24 +119,37 @@
     </div>
 
     <!-- Dettagli -->
-    <div class="griglia-dettagli">
-      <details class="scheda dettaglio">
-        <summary><h2>Dettaglio contributi INPS</h2></summary>
+    <div class="pila-dettagli">
+      <p class="descrizione descrizione--pila">
+        I totali sono visibili senza aprire nulla. Apri una sezione per vedere la formula
+        applicata e la fonte normativa.
+      </p>
+      <details class="dettaglio">
+        <summary>
+          <h2>Contributi INPS</h2>
+          <span class="sommario-valore" id="sommario-inps"></span>
+        </summary>
         <div id="dettaglio-inps"></div>
       </details>
-
-      <details class="scheda dettaglio">
-        <summary><h2>Dettaglio IRPEF per scaglione</h2></summary>
+      <details class="dettaglio">
+        <summary>
+          <h2>IRPEF per scaglione</h2>
+          <span class="sommario-valore" id="sommario-irpef"></span>
+        </summary>
         <div id="dettaglio-irpef"></div>
       </details>
-
-      <details class="scheda dettaglio">
-        <summary><h2>Dettaglio detrazioni e integrazioni</h2></summary>
+      <details class="dettaglio">
+        <summary>
+          <h2>Detrazioni e integrazioni</h2>
+          <span class="sommario-valore" id="sommario-detrazioni"></span>
+        </summary>
         <div id="dettaglio-detrazioni"></div>
       </details>
-
-      <details class="scheda dettaglio">
-        <summary><h2>Dettaglio addizionali locali</h2></summary>
+      <details class="dettaglio">
+        <summary>
+          <h2>Addizionali locali</h2>
+          <span class="sommario-valore" id="sommario-addizionali"></span>
+        </summary>
         <div id="dettaglio-addizionali"></div>
       </details>
     </div>

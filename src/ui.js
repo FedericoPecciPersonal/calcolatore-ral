@@ -63,7 +63,7 @@ function tabella(intestazioni, righe) {
       return `<tr${classe}>${celle}</tr>`;
     })
     .join('');
-  return `<table class="tabella"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>`;
+  return `<div class="tabella-scroll"><table class="tabella"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
 }
 
 // -----------------------------------------------------------------------------
@@ -454,10 +454,59 @@ function renderCostoAzienda(r) {
 // Orchestrazione
 // -----------------------------------------------------------------------------
 
+/** Legge gli input correnti del modulo. */
+function inputCorrenti() {
+  const segmento = document.querySelector('input[name="mensilita"]:checked');
+  return {
+    ral: Number(el('ral').value),
+    mensilita: Number(segmento ? segmento.value : 13),
+  };
+}
+
+/**
+ * Il calcolo si avvia solo con Calcola, come richiesto. Ma questo crea
+ * un'ambiguita': dopo aver modificato un campo la pagina mostrerebbe ancora i
+ * numeri dell'input precedente senza segnalarlo. Qui i risultati vengono
+ * attenuati e compare un avviso finche' non si ricalcola.
+ */
+let ultimoInputCalcolato = null;
+
+function aggiornaSegnaleObsoleto() {
+  const attuale = inputCorrenti();
+  const obsoleto =
+    ultimoInputCalcolato !== null &&
+    (attuale.ral !== ultimoInputCalcolato.ral ||
+      attuale.mensilita !== ultimoInputCalcolato.mensilita);
+
+  el('segnale-obsoleto').hidden = !obsoleto;
+  el('risultati').classList.toggle('risultati--obsoleti', obsoleto);
+}
+
+/** Totali mostrati nelle intestazioni dei dettagli, visibili anche da chiusi. */
+function renderSommari(r) {
+  const imposta = (id, valore, tipo) => {
+    const nodo = el(id);
+    nodo.textContent = `${tipo === 'trattenuta' ? '−' : '+'} ${euro0(valore)}`;
+    nodo.className = `sommario-valore sommario-valore--${
+      tipo === 'trattenuta' ? 'trattenuta' : 'beneficio'
+    }`;
+  };
+
+  imposta('sommario-inps', r.contributi.totale, 'trattenuta');
+  imposta('sommario-irpef', r.irpefNetta, 'trattenuta');
+  // Beneficio effettivo: detrazioni realmente godute (non le incapienti) piu' le
+  // somme non imponibili erogate in busta paga.
+  imposta(
+    'sommario-detrazioni',
+    Math.min(r.detrazioni.totale, r.irpefLorda) + r.integrazioni.totale,
+    'beneficio',
+  );
+  imposta('sommario-addizionali', r.addizionali.totale, 'trattenuta');
+}
+
 function calcolaEMostra() {
   const errore = el('errore');
-  const ral = Number(el('ral').value);
-  const mensilita = Number(el('mensilita').value);
+  const { ral, mensilita } = inputCorrenti();
 
   if (!Number.isFinite(ral) || ral < 0) {
     errore.textContent = 'Inserisci una RAL valida: un numero maggiore o uguale a zero.';
@@ -486,8 +535,11 @@ function calcolaEMostra() {
   renderDettaglioDetrazioni(r);
   renderDettaglioAddizionali(r);
   renderCostoAzienda(r);
+  renderSommari(r);
 
   el('risultati').hidden = false;
+  ultimoInputCalcolato = { ral, mensilita };
+  aggiornaSegnaleObsoleto();
 
   // Utile per ispezionare il risultato completo dalla console del browser.
   window.ultimoRisultato = r;
@@ -497,6 +549,9 @@ el('modulo').addEventListener('submit', (evento) => {
   evento.preventDefault();
   calcolaEMostra();
 });
+
+el('modulo').addEventListener('input', aggiornaSegnaleObsoleto);
+el('modulo').addEventListener('change', aggiornaSegnaleObsoleto);
 
 // Primo calcolo al caricamento, così la pagina non si apre vuota.
 calcolaEMostra();

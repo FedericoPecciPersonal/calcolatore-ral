@@ -153,56 +153,61 @@ main { padding-block: 32px 56px; }
   color: var(--testo-tenue);
 }
 
-/* ---------- Modulo di input ---------- */
+/* ---------- Barra dei controlli ----------
+   Ogni controllo ha la STESSA altezza dichiarata (--h-controllo) e il testo di
+   aiuto sta fuori dalla griglia. L'allineamento diventa cosi' strutturale invece
+   di dipendere dall'altezza del contenuto di ciascun campo.                    */
 
-.scheda--input { padding: 24px; }
+.scheda--input { padding: 22px 24px 18px; }
 
-.griglia-input {
+.barra-controlli {
+  --h-controllo: 48px;
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 16px;
   align-items: end;
 }
 
-@media (max-width: 680px) {
-  .griglia-input { grid-template-columns: 1fr; }
-}
+.controllo { min-width: 0; }
 
-.campo label {
+.controllo > label,
+.controllo > legend {
   display: block;
-  margin-bottom: 7px;
+  margin: 0 0 7px;
+  padding: 0;
   font-size: .8125rem;
   font-weight: 600;
   color: var(--testo-tenue);
 }
 
+.controllo--segmentato { margin: 0; padding: 0; border: 0; }
+
+/* Campo importo */
+
 .input-valuta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 14px;
+  gap: 9px;
+  height: var(--h-controllo);
+  padding: 0 15px;
   border: 1px solid var(--bordo-forte);
   border-radius: var(--raggio-piccolo);
   background: var(--sfondo);
   transition: border-color .12s, box-shadow .12s;
 }
 
-.input-valuta:focus-within,
-select:focus-visible {
-  outline: none;
+.input-valuta:focus-within {
   border-color: var(--accento);
   box-shadow: 0 0 0 3px var(--accento-tenue);
 }
 
-.input-valuta span {
-  font-size: 1.0625rem;
-  color: var(--testo-debole);
-}
+.input-valuta span { font-size: 1.0625rem; color: var(--testo-debole); }
 
 .input-valuta input {
   flex: 1;
   min-width: 0;
-  padding: 12px 0;
+  height: 100%;
+  padding: 0;
   border: 0;
   background: none;
   color: inherit;
@@ -214,25 +219,63 @@ select:focus-visible {
 
 .input-valuta input:focus { outline: none; }
 
-select {
-  width: 100%;
-  padding: 12px 14px;
+/* Controllo segmentato: tre opzioni discrete, tutte visibili, un solo click.
+   Sostituisce una <select>, che ne richiedeva due e la cui altezza nativa
+   variava per sistema operativo rompendo l'allineamento della riga.           */
+
+.segmenti {
+  display: flex;
+  gap: 2px;
+  height: var(--h-controllo);
+  padding: 3px;
   border: 1px solid var(--bordo-forte);
   border-radius: var(--raggio-piccolo);
   background: var(--sfondo);
-  color: inherit;
-  font: inherit;
-  font-size: 1rem;
 }
 
-.aiuto {
-  margin: 7px 0 0;
-  font-size: .75rem;
-  color: var(--testo-debole);
+.segmenti input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
+
+.segmenti label {
+  display: grid;
+  place-items: center;
+  min-width: 50px;
+  margin: 0;
+  border-radius: 4px;
+  font-size: .9375rem;
+  font-weight: 560;
+  font-variant-numeric: tabular-nums;
+  color: var(--testo-tenue);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+
+.segmenti label:hover { color: var(--testo); background: var(--sfondo-tenue); }
+
+.segmenti input:checked + label {
+  background: var(--accento);
+  color: #fff;
+  font-weight: 620;
+}
+
+@media (prefers-color-scheme: dark) {
+  .segmenti input:checked + label { color: #08201d; }
+}
+
+.segmenti input:focus-visible + label { outline: 2px solid var(--accento); outline-offset: 2px; }
+
+/* Azione */
+
+.controllo--azione { display: flex; align-items: flex-end; }
 
 .bottone {
-  padding: 13px 30px;
+  height: var(--h-controllo);
+  padding: 0 32px;
   border: 0;
   border-radius: var(--raggio-piccolo);
   background: var(--accento);
@@ -240,15 +283,45 @@ select {
   font: inherit;
   font-size: .9375rem;
   font-weight: 620;
+  white-space: nowrap;
   cursor: pointer;
   transition: filter .12s, transform .06s;
 }
 
 @media (prefers-color-scheme: dark) { .bottone { color: #08201d; } }
 
-.bottone:hover { filter: brightness(1.1); }
+.bottone:hover { filter: brightness(1.08); }
 .bottone:active { transform: translateY(1px); }
 .bottone:focus-visible { outline: 2px solid var(--accento); outline-offset: 3px; }
+
+@media (max-width: 760px) {
+  .barra-controlli { grid-template-columns: 1fr; align-items: stretch; }
+  .controllo--azione { display: block; }
+  .bottone { width: 100%; }
+}
+
+/* Riga di aiuto e segnale di risultato non aggiornato */
+
+.riga-aiuto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 20px;
+  margin-top: 14px;
+}
+
+.aiuto { margin: 0; max-width: 68ch; font-size: .75rem; color: var(--testo-debole); }
+
+.segnale-obsoleto {
+  margin: 0;
+  font-size: .75rem;
+  font-weight: 620;
+  white-space: nowrap;
+  color: var(--c-contributi);
+}
+
+.segnale-obsoleto[hidden] { display: none; }
 
 .errore {
   margin: 14px 0 0;
@@ -417,29 +490,43 @@ select {
 
 .tabella .progressivo { color: var(--testo-tenue); }
 
-/* ---------- Dettagli ---------- */
+/* ---------- Dettagli ----------
+   Pila a piena larghezza invece di una griglia a colonne: le tabelle finanziarie
+   a quattro colonne richiedono ~400px e in una colonna da 318px venivano tagliate.
+   Da chiusa, ogni sezione mostra il proprio totale: lo stato collassato informa
+   comunque, e si apre solo per vedere formula e fonte.                        */
 
-.griglia-dettagli {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 20px;
+.pila-dettagli {
   margin-bottom: 20px;
+  background: var(--sfondo-scheda);
+  border: 1px solid var(--bordo);
+  border-radius: var(--raggio);
+  box-shadow: var(--ombra);
+  overflow: hidden;
 }
 
-.griglia-dettagli .scheda { margin-bottom: 0; }
+.descrizione--pila {
+  margin: 0;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid var(--bordo);
+}
 
-.dettaglio { padding: 0; }
+.dettaglio { border-bottom: 1px solid var(--bordo); }
+.dettaglio:last-child { border-bottom: 0; }
 
 .dettaglio summary {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 18px 24px;
+  gap: 12px;
+  padding: 15px 24px;
   cursor: pointer;
   list-style: none;
+  transition: background .12s;
 }
 
 .dettaglio summary::-webkit-details-marker { display: none; }
+.dettaglio summary:hover { background: var(--sfondo-tenue); }
+.dettaglio summary:focus-visible { outline: 2px solid var(--accento); outline-offset: -2px; }
 
 .dettaglio summary::before {
   content: "";
@@ -453,18 +540,33 @@ select {
 }
 
 .dettaglio[open] summary::before { transform: rotate(45deg); }
+.dettaglio[open] summary { background: var(--sfondo-tenue); }
 
 .dettaglio summary h2 { margin: 0; }
-.dettaglio summary:focus-visible { outline: 2px solid var(--accento); outline-offset: -2px; }
 
-.dettaglio > div { padding: 0 24px 20px; }
+.sommario-valore {
+  margin-left: auto;
+  font-size: .9375rem;
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--testo);
+}
+
+.sommario-valore--trattenuta { color: var(--negativo); }
+.sommario-valore--beneficio  { color: var(--positivo); }
+
+.dettaglio > div { padding: 6px 24px 22px; }
 
 .dettaglio .tabella { font-size: .875rem; }
 .dettaglio .tabella th,
 .dettaglio .tabella td { padding: 9px 10px; }
 
+/* Rete di sicurezza sui viewport stretti: la tabella scorre, non viene tagliata. */
+.tabella-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
 .formula {
-  margin: 12px 0 0;
+  margin: 14px 0 0;
   padding: 11px 13px;
   border-left: 2px solid var(--bordo-forte);
   background: var(--sfondo-tenue);
@@ -476,20 +578,19 @@ select {
   white-space: pre-wrap;
 }
 
-.nota-fonte {
-  margin: 12px 0 0;
-  font-size: .75rem;
-  color: var(--testo-debole);
-}
+.nota-fonte { margin: 12px 0 0; font-size: .75rem; color: var(--testo-debole); }
 
 .avviso {
-  margin: 12px 0 0;
+  margin: 14px 0 0;
   padding: 11px 13px;
   border-radius: var(--raggio-piccolo);
   background: color-mix(in srgb, var(--c-contributi) 13%, transparent);
   font-size: .8125rem;
   color: var(--testo-tenue);
 }
+
+/* Risultati non aggiornati rispetto agli input correnti */
+.risultati--obsoleti { opacity: .45; transition: opacity .18s; }
 
 /* ---------- Note e piè di pagina ---------- */
 
