@@ -700,10 +700,9 @@ a { color: var(--accento); text-decoration-thickness: 1px; text-underline-offset
 .modalita label:hover { color: var(--testo); }
 
 .modalita input:checked + label {
-  background: var(--sfondo-scheda);
-  color: var(--testo);
+  background: var(--accento);
+  color: var(--su-accento);
   font-weight: 620;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
 }
 
 .modalita input:focus-visible + label { outline: 2px solid var(--accento); outline-offset: 1px; }
@@ -799,9 +798,10 @@ a { color: var(--accento); text-decoration-thickness: 1px; text-underline-offset
 .tema label:hover { color: var(--testo); }
 
 .tema input:checked + label {
-  background: var(--sfondo-scheda);
-  color: var(--testo);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+  background: var(--accento-tenue);
+  color: var(--accento);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accento) 40%, transparent);
 }
 
 .tema input:focus-visible + label { outline: 2px solid var(--accento); outline-offset: 2px; }

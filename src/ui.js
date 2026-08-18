@@ -573,6 +573,35 @@ function aggiornaTestiModalita() {
   el('aiuto-testo').textContent = TESTI[modo].aiuto;
 }
 
+/**
+ * Cambio di modalita'.
+ *
+ * Il valore nel campo viene CONVERTITO, non lasciato com'e': 35.000 ha senso come
+ * RAL, non come netto mensile, e chi passava da una modalita' all'altra si
+ * ritrovava un numero assurdo da correggere a mano. Ora lo scenario viene
+ * trasportato — la stessa situazione, espressa nell'altro verso.
+ *
+ * E si ricalcola subito, senza attendere Calcola: il risultato e' gia' noto,
+ * perche' e' lo stesso scenario di prima. Il pulsante resta la via per applicare
+ * un numero NUOVO. Il vantaggio e' che il cambio di modalita' produce un effetto
+ * immediato e visibile — il valore nel campo cambia sotto il dito — invece di
+ * sembrare che il tocco non abbia fatto niente.
+ */
+function cambiaModalita() {
+  const precedente = window.ultimoRisultato;
+  const { modo } = inputCorrenti();
+
+  if (precedente) {
+    el('importo').value =
+      modo === 'netto'
+        ? Math.round(precedente.nettoMensile)
+        : Math.round(precedente.input.ral);
+  }
+
+  aggiornaTestiModalita();
+  calcolaEMostra();
+}
+
 /** Rende lo scenario condivisibile: lo stato del modulo vive nella querystring. */
 function aggiornaUrl({ modo, importo, mensilita }) {
   const q = new URLSearchParams();
@@ -765,7 +794,7 @@ el('modulo').addEventListener('input', aggiornaSegnaleObsoleto);
 el('modulo').addEventListener('change', aggiornaSegnaleObsoleto);
 
 document.querySelectorAll('input[name="modo"]').forEach((radio) =>
-  radio.addEventListener('change', aggiornaTestiModalita),
+  radio.addEventListener('change', cambiaModalita),
 );
 
 inizializzaTema();
