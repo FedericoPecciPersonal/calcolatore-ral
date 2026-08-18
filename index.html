@@ -5,13 +5,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dal lordo al netto — Calcolatore RAL 2026</title>
 <meta name="description" content="Calcolatore della retribuzione netta annuale e mensile a partire dalla RAL. Anno d'imposta 2026, impiegato a tempo indeterminato residente a Milano.">
+<script>
+  // Deve stare qui, inline e prima del foglio di stile: se il tema venisse
+  // applicato dopo il caricamento di ui.js, al primo paint si vedrebbe un lampo
+  // del tema sbagliato. "auto" non scrive nulla e lascia decidere alla media query.
+  (function () {
+    try {
+      var scelta = localStorage.getItem('tema');
+      if (scelta === 'chiaro') document.documentElement.dataset.theme = 'light';
+      else if (scelta === 'scuro') document.documentElement.dataset.theme = 'dark';
+    } catch (e) {}
+  })();
+</script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="intestazione">
   <div class="contenitore">
-    <p class="etichetta">Prototipo · anno d'imposta 2026</p>
+    <div class="barra-superiore">
+      <p class="etichetta">Prototipo · anno d'imposta 2026</p>
+      <fieldset class="tema">
+        <legend class="solo-lettori-schermo">Aspetto</legend>
+        <input type="radio" name="tema" id="tema-auto" value="auto" checked>
+        <label for="tema-auto">Auto</label>
+        <input type="radio" name="tema" id="tema-chiaro" value="chiaro">
+        <label for="tema-chiaro">Chiaro</label>
+        <input type="radio" name="tema" id="tema-scuro" value="scuro">
+        <label for="tema-scuro">Scuro</label>
+      </fieldset>
+    </div>
     <h1>Dal lordo al netto</h1>
     <p class="sottotitolo">
       Quanto resta in tasca a un dipendente, e quali voci vengono trattenute lungo il percorso.

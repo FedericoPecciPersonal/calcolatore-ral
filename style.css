@@ -14,6 +14,7 @@
   --testo-debole:     #8b8a84;
   --accento:          #0f5c56;
   --accento-tenue:    #e6f0ee;
+  --su-accento:       #ffffff;
   --negativo:         #a3341f;
   --positivo:         #1f6b3a;
   --neutro:           #6b6a64;
@@ -30,8 +31,17 @@
   --larghezza:        1040px;
 }
 
+/* Tema scuro.
+   I token compaiono in DUE regole perche' devono coprire tre stati:
+     - scelta esplicita "scuro"           -> :root[data-theme="dark"]
+     - preferenza di sistema, senza scelta -> media query
+     - scelta esplicita "chiaro" che deve VINCERE sulla preferenza di sistema
+       -> il :not([data-theme="light"]) nella media query
+   Una sola regola non puo' esprimere tutti e tre i casi: @media e selettore non
+   si combinano. La duplicazione riguarda solo i valori, non la logica.        */
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --sfondo:          #14140f;
     --sfondo-scheda:   #1c1c19;
     --sfondo-tenue:    #24241f;
@@ -42,6 +52,7 @@
     --testo-debole:    #83827b;
     --accento:         #5cbfae;
     --accento-tenue:   #17302c;
+    --su-accento:      #08201d;
     --negativo:        #e2856d;
     --positivo:        #74c48f;
     --neutro:          #9b9a92;
@@ -53,6 +64,30 @@
 
     --ombra:           0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2);
   }
+}
+
+:root[data-theme="dark"] {
+    --sfondo:          #14140f;
+    --sfondo-scheda:   #1c1c19;
+    --sfondo-tenue:    #24241f;
+    --bordo:           #32322c;
+    --bordo-forte:     #45453d;
+    --testo:           #f0efe9;
+    --testo-tenue:     #b0afa7;
+    --testo-debole:    #83827b;
+    --accento:         #5cbfae;
+    --accento-tenue:   #17302c;
+    --su-accento:      #08201d;
+    --negativo:        #e2856d;
+    --positivo:        #74c48f;
+    --neutro:          #9b9a92;
+
+    --c-netto:         #3f9e8f;
+    --c-contributi:    #d3a253;
+    --c-irpef:         #c4644a;
+    --c-addizionali:   #9b82c9;
+
+    --ombra:           0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -259,12 +294,8 @@ main { padding-block: 32px 56px; }
 
 .segmenti input:checked + label {
   background: var(--accento);
-  color: #fff;
+  color: var(--su-accento);
   font-weight: 620;
-}
-
-@media (prefers-color-scheme: dark) {
-  .segmenti input:checked + label { color: #08201d; }
 }
 
 .segmenti input:focus-visible + label { outline: 2px solid var(--accento); outline-offset: 2px; }
@@ -279,7 +310,7 @@ main { padding-block: 32px 56px; }
   border: 0;
   border-radius: var(--raggio-piccolo);
   background: var(--accento);
-  color: #fff;
+  color: var(--su-accento);
   font: inherit;
   font-size: .9375rem;
   font-weight: 620;
@@ -287,8 +318,6 @@ main { padding-block: 32px 56px; }
   cursor: pointer;
   transition: filter .12s, transform .06s;
 }
-
-@media (prefers-color-scheme: dark) { .bottone { color: #08201d; } }
 
 .bottone:hover { filter: brightness(1.08); }
 .bottone:active { transform: translateY(1px); }
@@ -713,3 +742,182 @@ a { color: var(--accento); text-decoration-thickness: 1px; text-underline-offset
 .chiave { font-weight: 620; }
 .chiave--rosso { color: var(--negativo); }
 .chiave--verde { color: var(--positivo); }
+
+/* ---------- Selettore del tema ---------- */
+
+.solo-lettori-schermo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.barra-superiore {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.barra-superiore .etichetta { margin: 0; }
+
+.tema {
+  display: inline-flex;
+  gap: 2px;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid var(--bordo);
+  border-radius: 999px;
+  background: var(--sfondo-tenue);
+}
+
+.tema input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tema label {
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--testo-debole);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+
+.tema label:hover { color: var(--testo); }
+
+.tema input:checked + label {
+  background: var(--sfondo-scheda);
+  color: var(--testo);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+}
+
+.tema input:focus-visible + label { outline: 2px solid var(--accento); outline-offset: 2px; }
+
+/* =============================================================================
+   MOBILE
+   Le tabelle finanziarie sono il punto critico: a 390px di viewport una tabella a
+   quattro colonne con importi in valuta ne chiede circa 400, e lo scorrimento
+   orizzontale dentro una card e' un'affordance che su telefono nessuno trova.
+   Sotto i 620px le tabelle si IMPILANO: ogni riga diventa un blocco e ogni valore
+   porta davanti l'etichetta della sua colonna, presa da data-etichetta.
+   ========================================================================== */
+
+@media (max-width: 620px) {
+
+  /* Bersagli tattili: 48px non basta sotto il pollice, si sale a 52. */
+  .barra-controlli { --h-controllo: 52px; }
+  .segmenti label { min-width: 60px; font-size: 1rem; }
+
+  .modalita { display: flex; width: 100%; }
+  .modalita label { flex: 1; text-align: center; padding: 11px 10px; }
+
+  .tema { width: 100%; justify-content: center; }
+  /* 13px di padding portano il bersaglio a 44px, il minimo consigliato per il tocco. */
+  .tema label { flex: 1; text-align: center; padding: 13px 10px; }
+
+  /* Respiro: meno margini, piu' contenuto. */
+  .intestazione { padding: 26px 0 28px; }
+  .contenitore { padding-inline: 16px; }
+  main { padding-block: 20px 40px; }
+  .scheda { padding: 18px 16px; }
+  .scheda--input { padding: 18px 16px 16px; }
+  .kpi { padding: 18px 18px; }
+  .griglia-kpi { gap: 14px; }
+  .descrizione--pila { padding: 16px 16px 14px; }
+  .dettaglio summary { padding: 14px 16px; gap: 10px; }
+  .dettaglio > div { padding: 4px 16px 18px; }
+  .spiegazione { padding: 13px 14px; font-size: .90625rem; }
+  .esito-inverso { padding: 16px 16px; }
+
+  /* Le intestazioni di sezione possono andare a capo senza spingere il totale. */
+  .dettaglio summary h2 { font-size: 1rem; }
+  .sommario-valore { font-size: .875rem; }
+
+  /* ---- Tabelle impilate ---- */
+
+  .tabella-scroll { overflow-x: visible; }
+
+  .tabella thead { display: none; }
+
+  .tabella,
+  .tabella tbody,
+  .tabella tr { display: block; width: 100%; }
+
+  .tabella tr {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--bordo);
+  }
+
+  .tabella tr:last-child { border-bottom: 0; }
+
+  .tabella td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 2px 0;
+    border: 0;
+    text-align: left;
+    white-space: normal;
+  }
+
+  /* L'etichetta della colonna precede il valore, così ogni numero resta
+     interpretabile anche senza la riga di intestazione.                     */
+  .tabella td[data-etichetta]::before {
+    content: attr(data-etichetta);
+    flex: none;
+    font-size: .75rem;
+    font-weight: 500;
+    color: var(--testo-debole);
+  }
+
+  .tabella td[data-etichetta=""]::before { content: none; }
+
+  .tabella td:first-child {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  /* Le righe con sfondo diventano blocchi riconoscibili anche impilate. */
+  .riga--partenza,
+  .riga--intermedia,
+  .riga--finale {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+
+  /* La cascata: nome e importo sulla prima riga, la nota sotto, il progressivo
+     in coda in corpo minore.                                                */
+  #cascata td.importo { font-size: 1rem; font-weight: 620; }
+  #cascata td:not(.importo):not(:first-child) { font-size: .8125rem; }
+
+  /* Barra di composizione e legenda */
+  .barra { height: 26px; }
+  .legenda { gap: 10px 18px; font-size: .78125rem; }
+
+  /* Formule monospaziate: scorrono da sole, non allargano la pagina. */
+  .formula { font-size: .71875rem; }
+}
+
+/* Schermi molto stretti (iPhone SE e simili) */
+@media (max-width: 360px) {
+  .tema label,
+  .modalita label { padding-inline: 6px; font-size: .6875rem; }
+  .tema label { padding-block: 14px; }
+  .segmenti label { min-width: 48px; }
+  .kpi-valore { font-size: 1.5rem; }
+}

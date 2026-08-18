@@ -58,7 +58,11 @@ function tabella(intestazioni, righe) {
     .map((riga) => {
       const classe = riga.classe ? ` class="${riga.classe}"` : '';
       const celle = riga.celle
-        .map((c, i) => (i === 0 ? `<td>${c}</td>` : `<td class="num">${c}</td>`))
+        .map((c, i) =>
+          i === 0
+            ? `<td>${c}</td>`
+            : `<td class="num" data-etichetta="${intestazioni[i] ?? ''}">${c}</td>`,
+        )
         .join('');
       return `<tr${classe}>${celle}</tr>`;
     })
@@ -276,7 +280,11 @@ function renderCascata(r) {
       (riga) =>
         `<tr class="${riga.classe}">${riga.celle
           .map((cella, i) =>
-            i === 0 ? `<td>${cella}</td>` : `<td class="num${i === 1 ? ' importo' : ''}">${cella}</td>`,
+            i === 0
+              ? `<td>${cella}</td>`
+              : `<td class="num${i === 1 ? ' importo' : ''}"${
+                  i === 2 ? ' data-etichetta="Quanto resta"' : ''
+                }>${cella}</td>`,
           )
           .join('')}</tr>`,
     )
@@ -489,6 +497,47 @@ function renderCostoAzienda(r) {
 // -----------------------------------------------------------------------------
 // Orchestrazione
 // -----------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// Tema chiaro / scuro
+// -----------------------------------------------------------------------------
+
+const RADICE = document.documentElement;
+
+/**
+ * Tre stati. "auto" non scrive nessun attributo e lascia decidere alla media
+ * query `prefers-color-scheme`: e' importante, perche' se scrivessimo comunque un
+ * valore la pagina resterebbe congelata sul tema del momento anche quando l'utente
+ * cambia impostazione di sistema.
+ */
+function applicaTema(scelta) {
+  if (scelta === 'chiaro') RADICE.dataset.theme = 'light';
+  else if (scelta === 'scuro') RADICE.dataset.theme = 'dark';
+  else delete RADICE.dataset.theme;
+
+  try {
+    localStorage.setItem('tema', scelta);
+  } catch (e) {
+    // Navigazione privata o storage negato: il tema vale per la sessione corrente.
+  }
+}
+
+function inizializzaTema() {
+  let scelta = 'auto';
+  try {
+    scelta = localStorage.getItem('tema') || 'auto';
+  } catch (e) {}
+
+  const radio = document.getElementById(`tema-${scelta}`);
+  if (radio) radio.checked = true;
+  else scelta = 'auto';
+
+  applicaTema(scelta);
+}
+
+document.querySelectorAll('input[name="tema"]').forEach((radio) =>
+  radio.addEventListener('change', () => applicaTema(radio.value)),
+);
 
 // -----------------------------------------------------------------------------
 // Modalita' e stato nell'URL
@@ -719,6 +768,7 @@ document.querySelectorAll('input[name="modo"]').forEach((radio) =>
   radio.addEventListener('change', aggiornaTestiModalita),
 );
 
+inizializzaTema();
 leggiUrl();
 aggiornaTestiModalita();
 calcolaEMostra();

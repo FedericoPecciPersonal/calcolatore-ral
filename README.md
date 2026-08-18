@@ -104,6 +104,17 @@ domanda "da dove viene questo numero?":
    un click di distanza: chi vuole verificare li trova, chi vuole solo capire non ci
    inciampa. Le due versioni descrivono gli stessi numeri, prodotti dallo stesso motore.
 
+5. **Mobile: le tabelle si impilano, non scorrono.** Sotto i 620px ogni riga diventa un
+   blocco e ogni valore porta davanti l'etichetta della sua colonna, presa da un attributo
+   `data-etichetta` emesso dal generatore di tabelle. Una tabella a quattro colonne con
+   importi in valuta chiede circa 400px: su un telefono da 390 lo scorrimento orizzontale
+   dentro una card è un'affordance che nessuno trova. Tutti i bersagli tattili sono almeno
+   44px.
+6. **Tema chiaro/scuro con tre stati**, non due: *Auto* segue la preferenza di sistema,
+   *Chiaro* e *Scuro* la sovrascrivono e restano memorizzati. Uno script inline nel `<head>`
+   applica la scelta prima del primo paint, così non si vede il lampo del tema sbagliato al
+   caricamento.
+
 Nessuna dipendenza, nessun build step, nessun framework: il repo è anche il sito.
 
 ---
