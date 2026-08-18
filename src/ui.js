@@ -505,15 +505,13 @@ function renderCostoAzienda(r) {
 const RADICE = document.documentElement;
 
 /**
- * Tre stati. "auto" non scrive nessun attributo e lascia decidere alla media
- * query `prefers-color-scheme`: e' importante, perche' se scrivessimo comunque un
- * valore la pagina resterebbe congelata sul tema del momento anche quando l'utente
- * cambia impostazione di sistema.
+ * Due stati espliciti: chiaro o scuro. La scelta scrive sempre l'attributo
+ * data-theme, quindi da quel momento la pagina non segue piu' le variazioni
+ * dell'impostazione di sistema: e' la conseguenza voluta di avere un interruttore
+ * esplicito invece di una terza opzione "automatico".
  */
 function applicaTema(scelta) {
-  if (scelta === 'chiaro') RADICE.dataset.theme = 'light';
-  else if (scelta === 'scuro') RADICE.dataset.theme = 'dark';
-  else delete RADICE.dataset.theme;
+  RADICE.dataset.theme = scelta === 'scuro' ? 'dark' : 'light';
 
   try {
     localStorage.setItem('tema', scelta);
@@ -523,15 +521,18 @@ function applicaTema(scelta) {
 }
 
 function inizializzaTema() {
-  let scelta = 'auto';
+  let scelta = null;
   try {
-    scelta = localStorage.getItem('tema') || 'auto';
+    scelta = localStorage.getItem('tema');
   } catch (e) {}
 
-  const radio = document.getElementById(`tema-${scelta}`);
-  if (radio) radio.checked = true;
-  else scelta = 'auto';
+  // Prima visita: si parte dalla preferenza di sistema, che e' il punto di
+  // partenza piu' probabilmente giusto. Da lì in poi vale la scelta esplicita.
+  if (scelta !== 'chiaro' && scelta !== 'scuro') {
+    scelta = matchMedia('(prefers-color-scheme: dark)').matches ? 'scuro' : 'chiaro';
+  }
 
+  document.getElementById(`tema-${scelta}`).checked = true;
   applicaTema(scelta);
 }
 

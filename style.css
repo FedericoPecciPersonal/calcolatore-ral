@@ -892,12 +892,22 @@ a { color: var(--accento); text-decoration-thickness: 1px; text-underline-offset
     font-weight: 600;
   }
 
-  /* Le righe con sfondo diventano blocchi riconoscibili anche impilate. */
-  .riga--partenza,
-  .riga--intermedia,
-  .riga--finale {
-    margin-inline: -16px;
-    padding-inline: 16px;
+  /* Le righe con sfondo diventano blocchi riconoscibili anche impilate.
+     Qui c'era un margin-inline negativo per farle sconfinare fino ai bordi della
+     card, con un padding-inline di compensazione. Non funzionava: `.tabella tr`
+     ha specificita' 0-1-1 e il suo `padding: 12px 0` batteva il `padding-inline`
+     di `.riga--finale`, che ha 0-1-0. Restava solo il margine negativo e le righe
+     scivolavano 16px a sinistra, disallineate da tutto il resto della card.
+     Il riquadro arrotondato ottiene lo stesso stacco senza sconfinare.        */
+  .tabella tr.riga--partenza,
+  .tabella tr.riga--intermedia,
+  .tabella tr.riga--finale {
+    border-radius: var(--raggio-piccolo);
+    padding-block: 12px;
+    /* Zero, non 12: un rientro orizzontale su queste sole righe le
+       disallineerebbe dalle altre della stessa tabella, che e' esattamente il
+       difetto che stiamo correggendo. Lo sfondo colorato basta a distinguerle. */
+    padding-inline: 0;
   }
 
   /* La cascata: nome e importo sulla prima riga, la nota sotto, il progressivo
