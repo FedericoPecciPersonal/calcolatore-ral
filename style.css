@@ -617,3 +617,88 @@ a { color: var(--accento); text-decoration-thickness: 1px; text-underline-offset
 .pie p { margin: 0; }
 
 .risultati[hidden] { display: none; }
+
+/* ---------- Selettore di direzione del calcolo ---------- */
+
+.modalita {
+  display: inline-flex;
+  gap: 2px;
+  margin-bottom: 20px;
+  padding: 3px;
+  border: 1px solid var(--bordo);
+  border-radius: var(--raggio-piccolo);
+  background: var(--sfondo-tenue);
+}
+
+.modalita input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modalita label {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: .875rem;
+  font-weight: 560;
+  color: var(--testo-tenue);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+
+.modalita label:hover { color: var(--testo); }
+
+.modalita input:checked + label {
+  background: var(--sfondo-scheda);
+  color: var(--testo);
+  font-weight: 620;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+}
+
+.modalita input:focus-visible + label { outline: 2px solid var(--accento); outline-offset: 1px; }
+
+/* ---------- Esito del calcolo inverso ---------- */
+
+.esito-inverso {
+  margin-bottom: 20px;
+  padding: 18px 24px;
+  border: 1px solid color-mix(in srgb, var(--accento) 35%, var(--bordo));
+  border-radius: var(--raggio);
+  background: var(--accento-tenue);
+}
+
+.esito-inverso[hidden] { display: none; }
+
+.esito-inverso p { margin: 0; font-size: .9375rem; color: var(--testo-tenue); }
+
+.esito-inverso strong {
+  font-size: 1.25rem;
+  font-weight: 660;
+  font-variant-numeric: tabular-nums;
+  color: var(--accento);
+}
+
+.esito-inverso .nota { margin-top: 8px; font-size: .8125rem; color: var(--testo-debole); }
+
+.esito-inverso--avvertenza {
+  border-color: color-mix(in srgb, var(--c-contributi) 45%, var(--bordo));
+  background: color-mix(in srgb, var(--c-contributi) 12%, transparent);
+}
+
+.esito-inverso--avvertenza strong { color: var(--c-contributi); }
+
+/* ---------- Grafico ---------- */
+
+.grafico { margin-top: 18px; }
+.grafico svg { display: block; width: 100%; height: auto; }
+
+.grafico .griglia-linea { stroke: var(--bordo); stroke-width: 1; }
+.grafico .asse-testo { fill: var(--testo-debole); font-size: 10px; font-family: inherit; }
+.grafico .serie-netto { fill: none; stroke: var(--c-netto); stroke-width: 2; }
+.grafico .serie-marginale { fill: none; stroke: var(--c-irpef); stroke-width: 2; }
+.grafico .marcatore { stroke: var(--testo); stroke-width: 1; stroke-dasharray: 3 3; opacity: .55; }
+.grafico .soglia { stroke: var(--c-addizionali); stroke-width: 1; stroke-dasharray: 2 3; opacity: .8; }
+.grafico .soglia-negativa { stroke: var(--negativo); stroke-width: 1.5; opacity: .85; }
+.grafico .pannello-titolo { fill: var(--testo-tenue); font-size: 10px; font-weight: 600; letter-spacing: .05em; }

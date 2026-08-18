@@ -28,13 +28,20 @@
 
   <!-- ===================== INPUT ===================== -->
   <form id="modulo" class="scheda scheda--input" novalidate>
+    <div class="modalita" role="radiogroup" aria-label="Direzione del calcolo">
+      <input type="radio" name="modo" id="modo-lordo" value="lordo" checked>
+      <label for="modo-lordo">Dalla RAL al netto</label>
+      <input type="radio" name="modo" id="modo-netto" value="netto">
+      <label for="modo-netto">Dal netto alla RAL</label>
+    </div>
+
     <div class="barra-controlli">
 
       <div class="controllo controllo--principale">
-        <label for="ral">Retribuzione annua lorda</label>
+        <label for="importo" id="etichetta-importo">Retribuzione annua lorda</label>
         <div class="input-valuta">
           <span aria-hidden="true">€</span>
-          <input type="number" id="ral" name="ral" value="35000" min="0" max="1000000" step="100"
+          <input type="number" id="importo" name="importo" value="35000" min="0" max="1000000" step="100"
                  inputmode="numeric" autocomplete="off" required>
         </div>
       </div>
@@ -58,10 +65,7 @@
     </div>
 
     <div class="riga-aiuto">
-      <p class="aiuto">
-        Importo annuo comprensivo delle mensilità aggiuntive. Il numero di mensilità
-        incide sul netto mensile, non sul totale annuo.
-      </p>
+      <p class="aiuto" id="aiuto-testo"></p>
       <p class="segnale-obsoleto" id="segnale-obsoleto" hidden>
         <span aria-hidden="true">●</span> Valori non aggiornati — premi Calcola
       </p>
@@ -72,6 +76,9 @@
 
   <!-- ===================== RISULTATI ===================== -->
   <section id="risultati" class="risultati" hidden aria-live="polite">
+
+    <!-- Esito del calcolo inverso -->
+    <div class="esito-inverso" id="esito-inverso" hidden></div>
 
     <!-- KPI -->
     <div class="griglia-kpi">
@@ -116,6 +123,19 @@
         </thead>
         <tbody></tbody>
       </table>
+    </div>
+
+    <!-- Grafico -->
+    <div class="scheda">
+      <h2>Come cambia il netto al variare della RAL</h2>
+      <p class="descrizione">
+        Sopra: il netto annuo. Sotto: l'<strong>aliquota marginale</strong>, cioè la quota di
+        ogni euro aggiuntivo di lordo che non arriva al dipendente. È la curva dove si vedono
+        le sei soglie del sistema — e le tre in cui aumentare il lordo fa
+        <em>scendere</em> il netto.
+      </p>
+      <div class="grafico" id="grafico"></div>
+      <ul class="legenda" id="legenda-grafico"></ul>
     </div>
 
     <!-- Dettagli -->

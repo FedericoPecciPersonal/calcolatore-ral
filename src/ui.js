@@ -6,7 +6,7 @@
  */
 
 import { REGOLE_2026 as REGOLE } from './regole-2026.js';
-import { calcolaNetto } from './calcolo.js';
+import { calcolaNetto, ralPerNettoAnnuo, curvaNetto, discontinuita } from './calcolo.js';
 
 // -----------------------------------------------------------------------------
 // Formattazione
@@ -454,20 +454,217 @@ function renderCostoAzienda(r) {
 // Orchestrazione
 // -----------------------------------------------------------------------------
 
+// -----------------------------------------------------------------------------
+// Grafico
+// -----------------------------------------------------------------------------
+
+/**
+ * Due pannelli sovrapposti che condividono l'asse delle RAL: il netto annuo
+ * sopra, l'aliquota marginale sotto. Il netto e' quasi una retta e da solo non
+ * dice niente; e' la curva marginale che rende visibili i gradini del sistema.
+ *
+ * SVG inline costruita a mano: nessuna libreria di grafici, e i colori arrivano
+ * dalle variabili CSS, quindi il grafico segue il tema chiaro/scuro.
+ */
+function renderGrafico(r) {
+  const ralCorrente = r.input.ral;
+  const xMax = Math.max(120000, Math.ceil((ralCorrente * 1.25) / 20000) * 20000);
+
+  const punti = curvaNetto(REGOLE, {
+    da: 0,
+    a: xMax,
+    passo: Math.max(100, Math.round(xMax / 450)),
+    mensilita: r.input.mensilita,
+  });
+  const salti = discontinuita(REGOLE, { da: 0, a: Math.min(xMax, 130000) });
+
+  const L = 62, R_ = 16, W = 900;
+  const aTop = 26, aH = 148;
+  const bTop = 222, bH = 108;
+  const H = 372;
+  const xw = W - L - R_;
+
+  const nettoMax = Math.max(...punti.map((p) => p.netto));
+  const yMaxNetto = Math.max(20000, Math.ceil(nettoMax / 20000) * 20000);
+
+  const x = (ral) => L + (ral / xMax) * xw;
+  const yA = (v) => aTop + aH - (v / yMaxNetto) * aH;
+  const yB = (v) => bTop + bH - Math.min(Math.max(v, 0), 1) * bH;
+
+  const percorso = (accessoreY, accessoreV) =>
+    punti
+      .map((p, i) => `${i ? 'L' : 'M'}${x(p.ral).toFixed(1)} ${accessoreY(accessoreV(p)).toFixed(1)}`)
+      .join(' ');
+
+  const pezzi = [];
+
+  // Titoli dei pannelli
+  pezzi.push(`<text class="pannello-titolo" x="${L}" y="${aTop - 10}">NETTO ANNUO</text>`);
+  pezzi.push(`<text class="pannello-titolo" x="${L}" y="${bTop - 10}">ALIQUOTA MARGINALE</text>`);
+
+  // Griglia e scala del pannello superiore
+  for (let i = 0; i <= 4; i++) {
+    const valore = (yMaxNetto / 4) * i;
+    const y = yA(valore);
+    pezzi.push(`<line class="griglia-linea" x1="${L}" y1="${y.toFixed(1)}" x2="${W - R_}" y2="${y.toFixed(1)}"/>`);
+    pezzi.push(`<text class="asse-testo" x="${L - 8}" y="${(y + 3).toFixed(1)}" text-anchor="end">${num(valore / 1000)}k</text>`);
+  }
+
+  // Griglia e scala del pannello inferiore
+  for (let i = 0; i <= 4; i++) {
+    const valore = i / 4;
+    const y = yB(valore);
+    pezzi.push(`<line class="griglia-linea" x1="${L}" y1="${y.toFixed(1)}" x2="${W - R_}" y2="${y.toFixed(1)}"/>`);
+    pezzi.push(`<text class="asse-testo" x="${L - 8}" y="${(y + 3).toFixed(1)}" text-anchor="end">${Math.round(valore * 100)}%</text>`);
+  }
+
+  // Soglie: tratteggiate su entrambi i pannelli, in rosso quelle che riducono il netto
+  for (const salto of salti) {
+    if (salto.ral > xMax) continue;
+    const classe = salto.riduceIlNetto ? 'soglia-negativa' : 'soglia';
+    const px = x(salto.ral).toFixed(1);
+    pezzi.push(`<line class="${classe}" x1="${px}" y1="${aTop}" x2="${px}" y2="${aTop + aH}"/>`);
+    pezzi.push(`<line class="${classe}" x1="${px}" y1="${bTop}" x2="${px}" y2="${bTop + bH}"/>`);
+  }
+
+  // Serie
+  pezzi.push(`<path class="serie-netto" d="${percorso(yA, (p) => p.netto)}"/>`);
+  pezzi.push(`<path class="serie-marginale" d="${percorso(yB, (p) => p.aliquotaMarginale)}"/>`);
+
+  // Marcatore della RAL corrente
+  const pxCorrente = x(ralCorrente);
+  if (ralCorrente <= xMax) {
+    pezzi.push(`<line class="marcatore" x1="${pxCorrente.toFixed(1)}" y1="${aTop}" x2="${pxCorrente.toFixed(1)}" y2="${bTop + bH}"/>`);
+    pezzi.push(`<circle cx="${pxCorrente.toFixed(1)}" cy="${yA(r.nettoAnnuo).toFixed(1)}" r="4" fill="var(--c-netto)"/>`);
+    const ancora = pxCorrente > W - 120 ? 'end' : 'start';
+    const dx = ancora === 'end' ? -8 : 8;
+    pezzi.push(`<text class="asse-testo" x="${(pxCorrente + dx).toFixed(1)}" y="${(aTop + 12).toFixed(1)}" text-anchor="${ancora}" style="font-weight:600">RAL ${num(ralCorrente)} €</text>`);
+  }
+
+  // Asse delle RAL
+  for (let v = 0; v <= xMax; v += xMax / 6) {
+    pezzi.push(`<text class="asse-testo" x="${x(v).toFixed(1)}" y="${H - 8}" text-anchor="middle">${num(v / 1000)}k</text>`);
+  }
+
+  el('grafico').innerHTML =
+    `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Netto annuo e aliquota marginale al variare della RAL">${pezzi.join('')}</svg>`;
+
+  const cheRiducono = salti.filter((s) => s.riduceIlNetto).length;
+  el('legenda-grafico').innerHTML = `
+    <li><span class="pallino" style="background:var(--c-netto)"></span><span>Netto annuo</span></li>
+    <li><span class="pallino" style="background:var(--c-irpef)"></span><span>Aliquota marginale</span></li>
+    <li><span class="pallino" style="background:var(--negativo)"></span><span>${cheRiducono} soglie che <em>riducono</em> il netto</span></li>
+    <li><span class="pallino" style="background:var(--c-addizionali)"></span><span>${salti.length - cheRiducono} soglie a gradino verso l'alto</span></li>`;
+}
+
+// -----------------------------------------------------------------------------
+// Modalita' e stato nell'URL
+// -----------------------------------------------------------------------------
+
 /** Legge gli input correnti del modulo. */
 function inputCorrenti() {
-  const segmento = document.querySelector('input[name="mensilita"]:checked');
+  const mens = document.querySelector('input[name="mensilita"]:checked');
+  const modo = document.querySelector('input[name="modo"]:checked');
   return {
-    ral: Number(el('ral').value),
-    mensilita: Number(segmento ? segmento.value : 13),
+    modo: modo ? modo.value : 'lordo',
+    importo: Number(el('importo').value),
+    mensilita: Number(mens ? mens.value : 13),
   };
 }
 
+const TESTI = {
+  lordo: {
+    etichetta: 'Retribuzione annua lorda',
+    aiuto:
+      'Importo annuo comprensivo delle mensilità aggiuntive. Il numero di mensilità incide sul netto mensile, non sul totale annuo.',
+  },
+  netto: {
+    etichetta: 'Netto mensile desiderato',
+    aiuto:
+      "Il calcolatore cerca la RAL più bassa che produce almeno questo netto. L'obiettivo annuo è il mensile moltiplicato per le mensilità scelte.",
+  },
+};
+
+function aggiornaTestiModalita() {
+  const { modo } = inputCorrenti();
+  el('etichetta-importo').textContent = TESTI[modo].etichetta;
+  el('aiuto-testo').textContent = TESTI[modo].aiuto;
+}
+
+/** Rende lo scenario condivisibile: lo stato del modulo vive nella querystring. */
+function aggiornaUrl({ modo, importo, mensilita }) {
+  const q = new URLSearchParams();
+  q.set(modo === 'netto' ? 'netto' : 'ral', String(importo));
+  q.set('mensilita', String(mensilita));
+  history.replaceState(null, '', `${location.pathname}?${q}`);
+}
+
+function leggiUrl() {
+  const q = new URLSearchParams(location.search);
+  const netto = q.get('netto');
+  const ral = q.get('ral');
+  const mensilita = q.get('mensilita');
+
+  if (netto !== null && Number.isFinite(Number(netto))) {
+    document.getElementById('modo-netto').checked = true;
+    el('importo').value = netto;
+  } else if (ral !== null && Number.isFinite(Number(ral))) {
+    document.getElementById('modo-lordo').checked = true;
+    el('importo').value = ral;
+  }
+
+  if (['12', '13', '14'].includes(mensilita)) {
+    document.getElementById(`m${mensilita}`).checked = true;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Esito del calcolo inverso
+// -----------------------------------------------------------------------------
+
+function renderEsitoInverso(esito, obiettivoMensile, mensilita) {
+  const nodo = el('esito-inverso');
+
+  if (!esito) {
+    nodo.hidden = true;
+    return;
+  }
+
+  if (!esito.trovata) {
+    nodo.className = 'esito-inverso esito-inverso--avvertenza';
+    nodo.innerHTML = `<p>Nessuna RAL entro <strong>${euro0(esito.ralMassima)}</strong> produce
+      ${euro0(obiettivoMensile)} netti al mese.</p>`;
+    nodo.hidden = false;
+    return;
+  }
+
+  const righe = [
+    `<p>Per ottenere ${euro0(obiettivoMensile)} netti al mese su ${mensilita} mensilità
+     serve una RAL di <strong>${euro0(esito.ral)}</strong>.</p>`,
+  ];
+
+  if (esito.oltreObiettivo) {
+    righe.push(`<p class="nota">Quel netto esatto non è ottenibile da nessuna RAL: la RAL
+      trovata è la prima che lo supera, di ${euro2(esito.scostamento)}. È l'effetto di una
+      delle soglie a gradino del sistema — le trovi marcate nel grafico più sotto.</p>`);
+  } else {
+    righe.push(`<p class="nota">È la RAL più bassa che soddisfa il vincolo, quindi la meno
+      costosa per il datore.</p>`);
+  }
+
+  nodo.className = 'esito-inverso';
+  nodo.innerHTML = righe.join('');
+  nodo.hidden = false;
+}
+
+// -----------------------------------------------------------------------------
+// Risultati non aggiornati
+// -----------------------------------------------------------------------------
+
 /**
- * Il calcolo si avvia solo con Calcola, come richiesto. Ma questo crea
- * un'ambiguita': dopo aver modificato un campo la pagina mostrerebbe ancora i
- * numeri dell'input precedente senza segnalarlo. Qui i risultati vengono
- * attenuati e compare un avviso finche' non si ricalcola.
+ * Il calcolo parte solo con Calcola, come richiesto. Senza questo segnale, dopo
+ * aver modificato un campo la pagina mostrerebbe ancora i numeri dell'input
+ * precedente senza dichiararlo.
  */
 let ultimoInputCalcolato = null;
 
@@ -475,8 +672,9 @@ function aggiornaSegnaleObsoleto() {
   const attuale = inputCorrenti();
   const obsoleto =
     ultimoInputCalcolato !== null &&
-    (attuale.ral !== ultimoInputCalcolato.ral ||
-      attuale.mensilita !== ultimoInputCalcolato.mensilita);
+    (attuale.importo !== ultimoInputCalcolato.importo ||
+      attuale.mensilita !== ultimoInputCalcolato.mensilita ||
+      attuale.modo !== ultimoInputCalcolato.modo);
 
   el('segnale-obsoleto').hidden = !obsoleto;
   el('risultati').classList.toggle('risultati--obsoleti', obsoleto);
@@ -494,8 +692,6 @@ function renderSommari(r) {
 
   imposta('sommario-inps', r.contributi.totale, 'trattenuta');
   imposta('sommario-irpef', r.irpefNetta, 'trattenuta');
-  // Beneficio effettivo: detrazioni realmente godute (non le incapienti) piu' le
-  // somme non imponibili erogate in busta paga.
   imposta(
     'sommario-detrazioni',
     Math.min(r.detrazioni.totale, r.irpefLorda) + r.integrazioni.totale,
@@ -504,18 +700,47 @@ function renderSommari(r) {
   imposta('sommario-addizionali', r.addizionali.totale, 'trattenuta');
 }
 
+// -----------------------------------------------------------------------------
+// Orchestrazione
+// -----------------------------------------------------------------------------
+
 function calcolaEMostra() {
   const errore = el('errore');
-  const { ral, mensilita } = inputCorrenti();
+  const { modo, importo, mensilita } = inputCorrenti();
 
-  if (!Number.isFinite(ral) || ral < 0) {
-    errore.textContent = 'Inserisci una RAL valida: un numero maggiore o uguale a zero.';
+  if (!Number.isFinite(importo) || importo < 0) {
+    errore.textContent =
+      modo === 'netto'
+        ? 'Inserisci un netto mensile valido: un numero maggiore o uguale a zero.'
+        : 'Inserisci una RAL valida: un numero maggiore o uguale a zero.';
     errore.hidden = false;
     el('risultati').hidden = true;
     return;
   }
 
   errore.hidden = true;
+
+  // In modalità inversa si risolve prima la RAL, poi il resto della pagina si
+  // costruisce identico: una sola catena di calcolo, nessuna logica duplicata.
+  let ral = importo;
+  let esitoInverso = null;
+
+  if (modo === 'netto') {
+    esitoInverso = ralPerNettoAnnuo(importo * mensilita, REGOLE, { mensilita });
+    if (!esitoInverso.trovata) {
+      renderEsitoInverso(esitoInverso, importo, mensilita);
+      el('risultati').hidden = false;
+      document.querySelectorAll('.risultati > *:not(#esito-inverso)').forEach((n) => {
+        n.style.display = 'none';
+      });
+      return;
+    }
+    ral = esitoInverso.ral;
+  }
+
+  document.querySelectorAll('.risultati > *').forEach((n) => {
+    n.style.display = '';
+  });
 
   let r;
   try {
@@ -527,9 +752,11 @@ function calcolaEMostra() {
     return;
   }
 
+  renderEsitoInverso(esitoInverso, importo, mensilita);
   renderKpi(r);
   renderBarra(r);
   renderCascata(r);
+  renderGrafico(r);
   renderDettaglioInps(r);
   renderDettaglioIrpef(r);
   renderDettaglioDetrazioni(r);
@@ -538,8 +765,9 @@ function calcolaEMostra() {
   renderSommari(r);
 
   el('risultati').hidden = false;
-  ultimoInputCalcolato = { ral, mensilita };
+  ultimoInputCalcolato = { modo, importo, mensilita };
   aggiornaSegnaleObsoleto();
+  aggiornaUrl({ modo, importo, mensilita });
 
   // Utile per ispezionare il risultato completo dalla console del browser.
   window.ultimoRisultato = r;
@@ -553,5 +781,10 @@ el('modulo').addEventListener('submit', (evento) => {
 el('modulo').addEventListener('input', aggiornaSegnaleObsoleto);
 el('modulo').addEventListener('change', aggiornaSegnaleObsoleto);
 
-// Primo calcolo al caricamento, così la pagina non si apre vuota.
+document.querySelectorAll('input[name="modo"]').forEach((radio) =>
+  radio.addEventListener('change', aggiornaTestiModalita),
+);
+
+leggiUrl();
+aggiornaTestiModalita();
 calcolaEMostra();

@@ -354,3 +354,159 @@ export function calcolaNetto(ral, regole, opzioni = {}) {
     costoAzienda: costoAzienda(ral, regole),
   };
 }
+
+// -----------------------------------------------------------------------------
+// CALCOLO INVERSO: dal netto desiderato alla RAL
+// -----------------------------------------------------------------------------
+
+/**
+ * Trova la RAL piu' bassa che produce almeno il netto annuo richiesto.
+ *
+ * Non si puo' usare una bisezione secca su tutto l'intervallo, perche' il netto
+ * NON e' monotono crescente nella RAL: la soglia dell'addizionale comunale
+ * introduce un salto verso il basso (docs/CASI-PROVA.md, caso F). Alcuni valori
+ * di netto sono quindi prodotti da DUE RAL diverse, e una bisezione ingenua
+ * potrebbe restituire quella piu' alta.
+ *
+ * Si procede in due fasi: una scansione a passo fisso per individuare il PRIMO
+ * intervallo in cui il netto raggiunge l'obiettivo, poi una bisezione dentro
+ * quell'intervallo. Il risultato e' la RAL minima - la meno costosa per il
+ * datore - fra quelle che soddisfano il vincolo.
+ *
+ * `oltreObiettivo` segnala che la bisezione ha scavalcato una discontinuita':
+ * quel netto esatto non e' ottenibile da nessuna RAL.
+ */
+export function ralPerNettoAnnuo(nettoObiettivo, regole, opzioni = {}) {
+  const ralMassima = opzioni.ralMassima ?? 1000000;
+  const passoScansione = opzioni.passoScansione ?? 1;
+  const netto = (ral) => calcolaNetto(ral, regole, opzioni).nettoAnnuo;
+
+  if (!Number.isFinite(nettoObiettivo) || nettoObiettivo < 0) {
+    throw new Error('Il netto obiettivo deve essere un numero maggiore o uguale a zero.');
+  }
+
+  if (nettoObiettivo === 0) {
+    return { trovata: true, ral: 0, nettoOttenuto: 0, scostamento: 0, oltreObiettivo: false };
+  }
+
+  if (netto(ralMassima) < nettoObiettivo) {
+    return {
+      trovata: false,
+      ral: null,
+      nettoOttenuto: null,
+      scostamento: null,
+      oltreObiettivo: false,
+      ralMassima,
+    };
+  }
+
+  // Fase 1: primo punto in cui il netto raggiunge l'obiettivo.
+  //
+  // La scansione parte da un limite inferiore ricavato analiticamente invece che
+  // da zero. Il netto non puo' superare la RAL piu' le somme non imponibili, il
+  // cui massimo si deduce dalle regole: sotto quella soglia nessuna RAL puo'
+  // produrre l'obiettivo, quindi scandirla sarebbe lavoro sprecato. Cosi' il
+  // passo puo' restare a 1 euro senza costi proibitivi - e serve che sia 1,
+  // perche' appena sotto la soglia comunale la finestra in cui il netto tocca il
+  // suo massimo locale e' larga circa un euro: un passo piu' grosso la
+  // scavalcherebbe restituendo una RAL piu' alta del necessario.
+  const massimoIntegrazioni =
+    regole.trattamentoIntegrativo.importo +
+    Math.max(...regole.sommaIntegrativa.fasce.map((f) => f.fino * f.percentuale));
+
+  let basso = Math.max(0, Math.floor(nettoObiettivo - massimoIntegrazioni) - 1);
+  if (netto(basso) >= nettoObiettivo) basso = 0;
+
+  let alto = ralMassima;
+  for (let ral = basso; ral <= ralMassima; ral += passoScansione) {
+    if (netto(ral) >= nettoObiettivo) {
+      alto = ral;
+      break;
+    }
+    basso = ral;
+  }
+
+  // Fase 2: bisezione fino al centesimo di euro.
+  for (let i = 0; i < 80 && alto - basso > 0.005; i++) {
+    const medio = (basso + alto) / 2;
+    if (netto(medio) >= nettoObiettivo) alto = medio;
+    else basso = medio;
+  }
+
+  const nettoOttenuto = netto(alto);
+  const scostamento = nettoOttenuto - nettoObiettivo;
+
+  return {
+    trovata: true,
+    ral: alto,
+    nettoOttenuto,
+    scostamento,
+    oltreObiettivo: scostamento > 1,
+  };
+}
+
+// -----------------------------------------------------------------------------
+// CAMPIONAMENTO DELLA CURVA
+// -----------------------------------------------------------------------------
+
+/**
+ * Campiona il modello su un intervallo di RAL restituendo, per ogni punto, il
+ * netto e l'ALIQUOTA MARGINALE: la quota di ogni euro aggiuntivo di lordo che
+ * non arriva al dipendente.
+ *
+ * L'aliquota marginale e' la grandezza che rende visibili le discontinuita' del
+ * sistema. Dove supera il 100% un aumento di lordo RIDUCE il netto: e' il caso
+ * della soglia comunale di Milano.
+ */
+export function curvaNetto(regole, opzioni = {}) {
+  const da = opzioni.da ?? 0;
+  const a = opzioni.a ?? 100000;
+  const passo = opzioni.passo ?? 250;
+  const delta = opzioni.delta ?? 50;
+
+  const punti = [];
+  for (let ral = da; ral <= a; ral += passo) {
+    const nettoQui = calcolaNetto(ral, regole, opzioni).nettoAnnuo;
+    const nettoDopo = calcolaNetto(ral + delta, regole, opzioni).nettoAnnuo;
+    const guadagnoMarginale = (nettoDopo - nettoQui) / delta;
+
+    punti.push({
+      ral,
+      netto: nettoQui,
+      aliquotaMarginale: 1 - guadagnoMarginale,
+    });
+  }
+
+  return punti;
+}
+
+/**
+ * Individua le RAL in cui il netto SALTA: le soglie della normativa che non sono
+ * raccordi continui ma gradini.
+ *
+ * Unica definizione condivisa fra il grafico, che le marca, e i test, che ne
+ * fissano l'insieme: se una modifica futura ne aggiunge o sposta una, il test la
+ * intercetta invece di lasciarla passare.
+ *
+ * `riduceIlNetto` distingue i gradini in cui un aumento di lordo fa DIMINUIRE il
+ * netto - controintuitivi, ma reali.
+ */
+export function discontinuita(regole, opzioni = {}) {
+  const da = opzioni.da ?? 0;
+  const a = opzioni.a ?? 130000;
+  const sogliaSalto = opzioni.sogliaSalto ?? 3;
+
+  const trovate = [];
+  let precedente = calcolaNetto(da, regole, opzioni).nettoAnnuo;
+
+  for (let ral = da + 1; ral <= a; ral++) {
+    const corrente = calcolaNetto(ral, regole, opzioni).nettoAnnuo;
+    const salto = corrente - precedente;
+    if (Math.abs(salto) > sogliaSalto) {
+      trovate.push({ ral, salto, riduceIlNetto: salto < 0 });
+    }
+    precedente = corrente;
+  }
+
+  return trovate;
+}

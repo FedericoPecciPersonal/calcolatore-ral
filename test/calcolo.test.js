@@ -20,6 +20,9 @@ import {
   sommaIntegrativa,
   addizionaleComunale,
   calcolaNetto,
+  ralPerNettoAnnuo,
+  curvaNetto,
+  discontinuita,
 } from '../src/calcolo.js';
 
 const vicino = (a, b, tolleranza = 0.01) =>
@@ -234,4 +237,165 @@ test('input non validi vengono rifiutati', () => {
   assert.throws(() => calcolaNetto(-1, R));
   assert.throws(() => calcolaNetto(NaN, R));
   assert.throws(() => calcolaNetto('40000', R));
+});
+
+// -----------------------------------------------------------------------------
+// Calcolo inverso: dal netto alla RAL
+// -----------------------------------------------------------------------------
+
+test('calcolo inverso: andata e ritorno su RAL lontane dalle discontinuita\'', () => {
+  for (const ral of [20000, 30000, 45000, 60000, 90000]) {
+    const nettoAtteso = calcolaNetto(ral, R).nettoAnnuo;
+    const inverso = ralPerNettoAnnuo(nettoAtteso, R);
+    assert.ok(inverso.trovata);
+    vicino(inverso.ral, ral, 1);
+    vicino(inverso.nettoOttenuto, nettoAtteso, 1);
+  }
+});
+
+test('calcolo inverso: obiettivo zero e obiettivo irraggiungibile', () => {
+  assert.equal(ralPerNettoAnnuo(0, R).ral, 0);
+  const impossibile = ralPerNettoAnnuo(900000, R, { ralMassima: 200000 });
+  assert.equal(impossibile.trovata, false);
+  assert.equal(impossibile.ral, null);
+});
+
+test('calcolo inverso: rifiuta obiettivi non validi', () => {
+  assert.throws(() => ralPerNettoAnnuo(-1, R));
+  assert.throws(() => ralPerNettoAnnuo(NaN, R));
+});
+
+test('calcolo inverso: restituisce la RAL MINIMA quando due RAL danno lo stesso netto', () => {
+  // Sotto la soglia comunale il netto e' piu' alto che appena sopra: il netto
+  // raggiunto a 25.327 di RAL viene raggiunto una seconda volta solo molto
+  // dopo il salto. L'inverso deve restituire la soluzione piu' economica.
+  const nettoSottoSoglia = calcolaNetto(25327, R).nettoAnnuo;
+  const inverso = ralPerNettoAnnuo(nettoSottoSoglia, R);
+  assert.ok(inverso.ral <= 25327 + 1, `attesa la RAL bassa, ottenuta ${inverso.ral}`);
+
+  // Verifica che esista davvero una seconda soluzione, piu' alta: altrimenti il
+  // test sopra non starebbe distinguendo fra le due. Dopo il salto il netto
+  // torna al livello pre-soglia solo con qualche centinaio di euro di RAL in
+  // piu', perche' deve recuperare i 184 euro di addizionale comunale al ritmo
+  // dell'aliquota marginale.
+  assert.ok(calcolaNetto(25330, R).nettoAnnuo < nettoSottoSoglia);
+
+  let ralDiRecupero = 25328;
+  while (calcolaNetto(ralDiRecupero, R).nettoAnnuo < nettoSottoSoglia) ralDiRecupero++;
+
+  assert.ok(
+    ralDiRecupero - 25327 > 200,
+    `il recupero dovrebbe costare centinaia di euro di RAL, ne costa ${ralDiRecupero - 25327}`,
+  );
+  assert.ok(
+    inverso.ral < ralDiRecupero,
+    'l\'inverso deve preferire la soluzione economica a quella oltre il salto',
+  );
+});
+
+test('calcolo inverso: il netto obiettivo e\' sempre raggiunto o superato, mai mancato', () => {
+  for (const obiettivo of [8000, 15000, 18500, 22000, 26000, 31000, 40000, 55000]) {
+    const inverso = ralPerNettoAnnuo(obiettivo, R);
+    assert.ok(inverso.trovata, `nessuna RAL per ${obiettivo}`);
+    assert.ok(
+      inverso.nettoOttenuto >= obiettivo - 0.01,
+      `obiettivo ${obiettivo} mancato: ottenuto ${inverso.nettoOttenuto}`,
+    );
+  }
+});
+
+// -----------------------------------------------------------------------------
+// Curva e aliquota marginale
+// -----------------------------------------------------------------------------
+
+test('curva: copre l\'intervallo richiesto con il passo richiesto', () => {
+  const punti = curvaNetto(R, { da: 0, a: 10000, passo: 1000 });
+  assert.equal(punti.length, 11);
+  assert.equal(punti[0].ral, 0);
+  assert.equal(punti.at(-1).ral, 10000);
+});
+
+test('il modello ha esattamente le sei discontinuita\' note', () => {
+  // Ogni soglia della normativa che non sia un raccordo continuo produce un
+  // salto nel netto. Sono sei fra 0 e 130.000 euro di RAL, e TRE fanno scendere
+  // il netto all'aumentare del lordo. Il test fissa l'insieme: se una modifica
+  // futura ne aggiunge, sposta o elimina una, il test lo segnala invece di
+  // lasciarla passare inosservata. Vedi docs/CASI-PROVA.md.
+  const attese = [
+    { ral: 9361,  verso: '+', causa: 'capienza del trattamento integrativo (RC 8.500)' },
+    { ral: 16519, verso: '-', causa: 'cessa il trattamento integrativo (RC 15.000)' },
+    { ral: 22025, verso: '+', causa: 'somma integrativa -> ulteriore detrazione (RC 20.000)' },
+    { ral: 25328, verso: '-', causa: 'soglia addizionale comunale Milano (imponibile 23.000)' },
+    { ral: 27531, verso: '+', causa: 'inizia la maggiorazione di 65 euro (RC 25.000)' },
+    { ral: 38543, verso: '-', causa: 'cessa la maggiorazione di 65 euro (RC 35.000)' },
+  ];
+
+  const trovate = discontinuita(R, { da: 0, a: 130000 }).map((d) => ({
+    ral: d.ral,
+    verso: d.riduceIlNetto ? '-' : '+',
+    salto: d.salto,
+  }));
+
+  assert.equal(
+    trovate.length,
+    attese.length,
+    `discontinuita' trovate: ${JSON.stringify(trovate.map((t) => [t.ral, t.salto.toFixed(2)]))}`,
+  );
+
+  attese.forEach((atteso, i) => {
+    assert.equal(trovate[i].ral, atteso.ral, `posizione inattesa — ${atteso.causa}`);
+    assert.equal(trovate[i].verso, atteso.verso, `verso inatteso — ${atteso.causa}`);
+  });
+
+  const cheRiduconoIlNetto = trovate.filter((t) => t.verso === '-');
+  assert.equal(cheRiduconoIlNetto.length, 3, 'tre soglie fanno scendere il netto');
+});
+
+test('curva: le anomalie dell\'aliquota marginale cadono sulle soglie note', () => {
+  const soglieNote = [9361, 16519, 22025, 25328, 27531, 38543];
+  const punti = curvaNetto(R, { da: 0, a: 130000, passo: 50, delta: 50 });
+  // Anomalia = fuori da [0, 1]: sopra 1 un aumento di lordo riduce il netto,
+  // sotto 0 il netto cresce piu' del lordo. Valori dentro l'intervallo sono
+  // tutti economicamente normali, compreso il 2,7% marginale delle RAL molto
+  // basse, dove la somma integrativa al 7,1% compensa quasi tutto l'INPS.
+  const anomale = punti.filter((p) => p.aliquotaMarginale > 1 || p.aliquotaMarginale < 0);
+
+  assert.ok(anomale.length > 0, 'la curva deve rendere rilevabili le discontinuita\'');
+  for (const p of anomale) {
+    const vicina = soglieNote.some((s) => Math.abs(p.ral - s) <= 100);
+    assert.ok(
+      vicina,
+      `aliquota marginale anomala (${p.aliquotaMarginale.toFixed(3)}) a RAL ${p.ral}, ` +
+        'lontano da ogni soglia nota',
+    );
+  }
+});
+
+test('curva: fuori dalle soglie l\'aliquota marginale sta in un intervallo plausibile', () => {
+  const punti = curvaNetto(R, { da: 42000, a: 90000, passo: 500 });
+  for (const p of punti) {
+    assert.ok(
+      p.aliquotaMarginale > 0.3 && p.aliquotaMarginale < 0.75,
+      `aliquota marginale implausibile (${p.aliquotaMarginale}) a RAL ${p.ral}`,
+    );
+  }
+});
+
+test('calcolo inverso: segnala i netti che nessuna RAL puo\' produrre', () => {
+  // Il gradino verso l'alto a 8.500 euro di reddito complessivo (dove scatta la
+  // capienza del trattamento integrativo) crea una banda di netti irraggiungibile.
+  const sotto = calcolaNetto(9360, R).nettoAnnuo;
+  const sopra = calcolaNetto(9361, R).nettoAnnuo;
+  assert.ok(sopra - sotto > 900, 'il gradino atteso vale circa 943 euro');
+
+  const dentroLaBanda = (sotto + sopra) / 2;
+  const esito = ralPerNettoAnnuo(dentroLaBanda, R);
+
+  assert.ok(esito.trovata);
+  assert.equal(esito.oltreObiettivo, true, 'va segnalato che l\'obiettivo esatto non esiste');
+  assert.ok(esito.nettoOttenuto > dentroLaBanda, 'la RAL trovata deve superare l\'obiettivo');
+
+  // Fuori dalle bande il flag non deve accendersi.
+  const normale = ralPerNettoAnnuo(calcolaNetto(45000, R).nettoAnnuo, R);
+  assert.equal(normale.oltreObiettivo, false);
 });

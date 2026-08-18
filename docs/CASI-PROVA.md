@@ -102,20 +102,45 @@ Oltre il massimale i contributi non crescono più: è la verifica che il tetto s
 
 ---
 
-## Caso F — La discontinuità della soglia comunale di Milano
+## Caso F — Le sei discontinuità del sistema
 
-L'esenzione di Milano è una **soglia**, non una franchigia. L'imponibile raggiunge 23.000 €
-con una RAL di circa 23.000 / (1 − 0,0919) ≈ 25.327 €.
+Questa non era una previsione: è emersa costruendo il grafico dell'aliquota marginale.
+Il primo test scritto assumeva **una** discontinuità, quella di Milano. Ne ha trovata
+una seconda a RAL 38.500, e una scansione a passo di un euro fra 0 e 130.000 € ne ha
+rivelate sei.
 
-| RAL | Imponibile fiscale | Addizionale comunale | Netto annuo |
+Ogni soglia della normativa che non sia un raccordo continuo produce un gradino nel netto:
+
+| RAL | Reddito complessivo | Salto sul netto | Causa |
 |---|---|---|---|
-| 25.327 € | 22.999,45 € | 0,00 € | maggiore |
-| 25.330 € | 23.001,17 € | 184,01 € | **minore** |
+| 9.361 € | 8.500 € | **+943,23 €** | Scatta la capienza del trattamento integrativo (1.200 €). Alla stessa soglia cambia la percentuale della somma integrativa (7,1% → 5,3%) e le addizionali diventano dovute perché l'IRPEF netta supera zero: tre effetti sovrapposti |
+| 16.519 € | 15.000 € | **−129,39 €** | Cessa il trattamento integrativo. La perdita di 1.200 € è quasi compensata dal salto della detrazione art. 13, che passa dai 1.955 € fissi ai ~3.100 € della formula di seconda fascia |
+| 22.025 € | 20.000 € | **+40,69 €** | Cessa la somma integrativa (~960 €) e inizia l'ulteriore detrazione (1.000 €). I due strumenti sono tarati per compensarsi quasi esattamente |
+| 25.328 € | 23.000 € di imponibile | **−183,44 €** | Soglia dell'addizionale comunale di Milano: non è una franchigia, quindi lo 0,80% si applica di colpo sull'intero imponibile |
+| 27.531 € | 25.000 € | **+65,56 €** | Inizia la maggiorazione fissa di 65 € della detrazione art. 13 |
+| 38.543 € | 35.000 € | **−64,72 €** | Cessa la maggiorazione di 65 €: è un gradino, non una discesa graduale |
 
-Tre euro di RAL in più fanno **perdere** circa 184 € di netto. Non è un bug del
-prototipo: è un effetto reale della norma, e il test
-`la soglia comunale di Milano genera una discontinuità nota nel netto` lo verifica
-esplicitamente perché una modifica futura al codice non lo nasconda per errore.
+**Tre di queste fanno scendere il netto all'aumentare del lordo.** Non sono errori del
+prototipo: sono la norma. Attorno a 25.328 € di RAL, tre euro di lordo in più costano
+circa 184 € di netto.
+
+Il test `il modello ha esattamente le sei discontinuità note` fissa l'insieme: posizione e
+verso di ognuna. Se una modifica futura ne aggiunge, sposta o elimina una, il test la
+intercetta invece di lasciarla passare inosservata.
+
+### Conseguenza sul calcolo inverso
+
+I gradini verso l'alto creano bande di netto che **nessuna RAL produce**. Quello a 8.500 €
+di reddito complessivo ne rende irraggiungibili 943 € consecutivi. Il calcolo inverso lo
+rileva e lo dichiara, invece di restituire silenziosamente un valore approssimato.
+
+I gradini verso il basso creano il problema opposto: lo stesso netto è prodotto da **due**
+RAL diverse. Dopo la soglia di Milano il netto torna al livello precedente solo con oltre
+200 € di RAL in più, perché deve recuperare i 184 € di addizionale all'aliquota marginale.
+Il calcolo inverso restituisce sempre la RAL minima, cioè la meno costosa per il datore —
+ed è per questo che la ricerca procede con una scansione a passo di un euro e non con una
+bisezione: la finestra in cui il netto tocca il massimo locale prima del salto è larga
+circa un euro, e un passo più grosso la scavalcherebbe.
 
 ---
 
