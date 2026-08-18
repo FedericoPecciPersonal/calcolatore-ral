@@ -101,24 +101,26 @@
 
     <!-- Barra di composizione -->
     <div class="scheda">
-      <h2>Composizione della RAL</h2>
-      <div class="barra" id="barra" role="img" aria-label="Composizione della retribuzione lorda"></div>
+      <h2>Dove finisce il tuo stipendio lordo</h2>
+      <div class="barra" id="barra" role="img" aria-label="Come si divide lo stipendio lordo fra netto, contributi e imposte"></div>
       <ul class="legenda" id="legenda"></ul>
     </div>
 
     <!-- Waterfall -->
     <div class="scheda">
-      <h2>Cosa viene trattenuto, nell'ordine</h2>
+      <h2>Dal lordo al netto, passo per passo</h2>
       <p class="descrizione">
-        Ogni riga è un passaggio della catena di calcolo. Le voci in rosso sono trattenute,
-        quelle in verde sono somme che si aggiungono al netto.
+        Si parte dallo stipendio lordo e si scende, una voce per volta, fino a quello che
+        arrivi davvero a incassare. In <span class="chiave chiave--rosso">rosso</span> ciò che
+        viene trattenuto, in <span class="chiave chiave--verde">verde</span> ciò che si
+        aggiunge. L'ultima colonna dice quanto resta dopo ogni passaggio.
       </p>
       <table class="tabella" id="cascata">
         <thead>
           <tr>
             <th scope="col">Voce</th>
             <th scope="col" class="num">Importo</th>
-            <th scope="col" class="num">Progressivo</th>
+            <th scope="col" class="num">Quanto resta</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -128,8 +130,8 @@
     <!-- Dettagli -->
     <div class="pila-dettagli">
       <p class="descrizione descrizione--pila">
-        I totali sono visibili senza aprire nulla. Apri una sezione per vedere la formula
-        applicata e la fonte normativa.
+        Gli importi si leggono già da qui, senza aprire niente. Apri una voce per capire a
+        cosa serve, come è stata calcolata e da quale norma arriva.
       </p>
       <details class="dettaglio">
         <summary>

@@ -97,6 +97,12 @@ domanda "da dove viene questo numero?":
 3. **Il motore restituisce tutti i passaggi intermedi, non solo il netto.** La UI non
    ricalcola niente: si limita a formattare. Il risultato completo è ispezionabile anche
    dalla console del browser, in `window.ultimoRisultato`.
+4. **Due registri linguistici, non uno.** La cascata e le intestazioni parlano in italiano
+   corrente — "Contributi per la pensione", "Su questo importo si pagano le tasse", "Quanto
+   resta" — perché sono ciò che si legge per primo, e spesso l'unica cosa che si legge. Il
+   lessico tecnico, le formule e i riferimenti normativi restano nelle card di dettaglio, a
+   un click di distanza: chi vuole verificare li trova, chi vuole solo capire non ci
+   inciampa. Le due versioni descrivono gli stessi numeri, prodotti dallo stesso motore.
 
 Nessuna dipendenza, nessun build step, nessun framework: il repo è anche il sito.
 

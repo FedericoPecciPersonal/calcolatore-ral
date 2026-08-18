@@ -73,7 +73,7 @@ function tabella(intestazioni, righe) {
 function renderKpi(r) {
   el('kpi-netto-annuo').textContent = euro0(r.nettoAnnuo);
   el('kpi-netto-annuo-nota').textContent =
-    `su una RAL di ${euro0(r.input.ral)} · trattenuto il ${pct(r.aliquotaEffettivaTotale, 1)}`;
+    `su ${euro0(r.input.ral)} di lordo · trattenuto il ${pct(r.aliquotaEffettivaTotale, 1)}`;
 
   el('kpi-netto-mensile').textContent = euro2(r.nettoMensile);
   el('kpi-netto-mensile-nota').textContent =
@@ -83,15 +83,15 @@ function renderKpi(r) {
 
   el('kpi-trattenute').textContent = euro0(r.totaleTrattenute);
   el('kpi-trattenute-nota').textContent =
-    `contributi ${euro0(r.contributi.totale)} · imposte ${euro0(r.totaleImposte)}`;
+    `pensione ${euro0(r.contributi.totale)} · imposte ${euro0(r.totaleImposte)}`;
 }
 
 function renderBarra(r) {
   const segmenti = [
-    { nome: 'Netto (quota della RAL)', valore: r.input.ral - r.totaleTrattenute, colore: 'var(--c-netto)' },
-    { nome: 'Contributi INPS', valore: r.contributi.totale, colore: 'var(--c-contributi)' },
-    { nome: 'IRPEF netta', valore: r.irpefNetta, colore: 'var(--c-irpef)' },
-    { nome: 'Addizionali locali', valore: r.addizionali.totale, colore: 'var(--c-addizionali)' },
+    { nome: 'Quello che ti resta', valore: r.input.ral - r.totaleTrattenute, colore: 'var(--c-netto)' },
+    { nome: 'Contributi per la pensione', valore: r.contributi.totale, colore: 'var(--c-contributi)' },
+    { nome: 'Imposta sul reddito', valore: r.irpefNetta, colore: 'var(--c-irpef)' },
+    { nome: 'Imposte di Regione e Comune', valore: r.addizionali.totale, colore: 'var(--c-addizionali)' },
   ];
 
   const totale = r.input.ral || 1;
@@ -119,15 +119,23 @@ function renderBarra(r) {
   if (r.integrazioni.totale > 0) {
     legenda += `<li>
       <span class="pallino" style="background:var(--positivo)"></span>
-      <span>Somme non imponibili <em>in aggiunta</em><br>
+      <span>Aggiunte in busta paga, non tassate<br>
       <span class="valore">+ ${euro0(r.integrazioni.totale)}</span>
-      <span class="quota">· fuori dalla RAL</span></span>
+      <span class="quota">· in più, oltre il lordo</span></span>
     </li>`;
   }
 
   el('legenda').innerHTML = legenda;
 }
 
+/**
+ * La cascata e' il primo blocco che si legge, spesso l'unico. Quindi parla in
+ * italiano corrente: "Contributi per la pensione", non "contributi previdenziali
+ * IVS"; "Su questo importo si pagano le tasse", non "imponibile fiscale". Il
+ * lessico tecnico, le formule e le fonti restano nelle card di dettaglio, a un
+ * click di distanza: chi vuole verificare li trova, chi vuole capire non ci
+ * inciampa.
+ */
 function renderCascata(r) {
   const righe = [];
   let progressivo = 0;
@@ -138,82 +146,106 @@ function renderCascata(r) {
     else if (tipo === 'integrazione') progressivo += importo;
 
     const segno = tipo === 'trattenuta' ? '−' : tipo === 'integrazione' ? '+' : '';
+    const soloValore =
+      tipo === 'partenza' || tipo === 'intermedia' || tipo === 'finale' || importo === 0;
 
     righe.push({
       classe: `riga--${tipo}`,
       celle: [
         `<span class="voce-nome">${nome}</span>${nota ? `<span class="voce-nota">${nota}</span>` : ''}`,
-        tipo === 'partenza' || tipo === 'intermedia' || tipo === 'finale'
-          ? euro2(importo)
-          : `${segno} ${euro2(importo)}`,
+        soloValore ? euro2(importo) : `${segno} ${euro2(importo)}`,
         `<span class="progressivo">${euro2(progressivo)}</span>`,
       ],
     });
   };
 
+  // --- Punto di partenza ----------------------------------------------------
   aggiungi({
-    nome: 'Retribuzione annua lorda',
-    nota: `${r.input.mensilita} mensilità`,
+    nome: 'Stipendio lordo annuo',
+    nota: `l'importo scritto nel contratto, distribuito su ${r.input.mensilita} mensilità`,
     importo: r.input.ral,
     tipo: 'partenza',
   });
 
+  // --- Contributi ------------------------------------------------------------
+  const c = r.contributi;
+  let notaContributi =
+    `il ${pct(c.aliquotaIvs, 2)} dello stipendio lordo — non è una tassa: ` +
+    'costruisce la tua pensione';
+  if (c.quotaAggiuntiva > 0) {
+    notaContributi += `; sulla parte oltre ${euro0(REGOLE.inps.primaFasciaPensionabile)} si versa l'1% in più`;
+  }
+  if (c.massimaleApplicato) {
+    notaContributi += `; oltre ${euro0(REGOLE.inps.massimaleAnnuo)} non se ne versano più`;
+  }
+
   aggiungi({
-    nome: 'Contributi previdenziali INPS a carico del dipendente',
-    nota:
-      `aliquota IVS ${pct(r.contributi.aliquotaIvs, 2)}` +
-      (r.contributi.quotaAggiuntiva > 0
-        ? ` + 1% sulla quota oltre ${euro0(REGOLE.inps.primaFasciaPensionabile)}`
-        : '') +
-      (r.contributi.massimaleApplicato
-        ? ` · base limitata al massimale di ${euro0(REGOLE.inps.massimaleAnnuo)}`
-        : ''),
-    importo: r.contributi.totale,
+    nome: 'Contributi per la pensione (INPS)',
+    nota: notaContributi,
+    importo: c.totale,
     tipo: 'trattenuta',
   });
 
+  // --- Base imponibile ------------------------------------------------------
   aggiungi({
-    nome: 'Imponibile fiscale',
-    nota: 'base di calcolo dell\'IRPEF e delle addizionali',
+    nome: 'Su questo importo si pagano le tasse',
+    nota: 'lo stipendio lordo meno i contributi: le imposte non si calcolano su tutto il lordo',
     importo: r.imponibileFiscale,
     tipo: 'intermedia',
   });
 
-  aggiungi({
-    nome: 'IRPEF netta',
-    nota:
-      `imposta lorda ${euro2(r.irpefLorda)} − detrazioni ${euro2(Math.min(r.detrazioni.totale, r.irpefLorda))}` +
+  // --- IRPEF ----------------------------------------------------------------
+  let notaIrpef;
+  if (r.detrazioni.totale <= 0) {
+    notaIrpef =
+      `nessuna detrazione la riduce: oltre ${euro0(REGOLE.detrazioneLavoroDipendente.fascia3.limite)} ` +
+      'di reddito non spettano più';
+  } else if (r.irpefNetta <= 0) {
+    notaIrpef = `sarebbe stata ${euro2(r.irpefLorda)}, ma le detrazioni la azzerano del tutto`;
+  } else {
+    notaIrpef =
+      `sarebbe stata ${euro2(r.irpefLorda)}, ridotta a ${euro2(r.irpefNetta)} dalle detrazioni` +
       (r.detrazioni.nonGodute > 0
-        ? ` · ${euro2(r.detrazioni.nonGodute)} di detrazioni incapienti`
-        : ''),
+        ? `; ${euro2(r.detrazioni.nonGodute)} di detrazioni non si riescono a usare`
+        : '');
+  }
+
+  aggiungi({
+    nome: 'Imposta sul reddito (IRPEF)',
+    nota: notaIrpef,
     importo: r.irpefNetta,
     tipo: 'trattenuta',
   });
 
+  // --- Addizionali ----------------------------------------------------------
+  const nonDovute = 'non si paga: su questo reddito non risulta dovuta l\'IRPEF';
+
   aggiungi({
-    nome: `Addizionale regionale — ${REGOLE.addizionaleRegionale.regione}`,
+    nome: `Imposta della Regione ${REGOLE.addizionaleRegionale.regione}`,
     nota: r.addizionali.dovute
-      ? `scaglioni progressivi · aliquota media ${pct(r.addizionali.regionale.importo / (r.imponibileFiscale || 1), 2)}`
-      : 'non dovuta: IRPEF netta pari a zero',
+      ? `in media ${pct(r.addizionali.regionale.importo / (r.imponibileFiscale || 1), 2)} del reddito tassabile`
+      : nonDovute,
     importo: r.addizionali.regionale.importo,
     tipo: 'trattenuta',
   });
 
+  const soglia = euro0(REGOLE.addizionaleComunale.sogliaEsenzione);
   aggiungi({
-    nome: `Addizionale comunale — ${REGOLE.addizionaleComunale.comune}`,
+    nome: `Imposta del Comune di ${REGOLE.addizionaleComunale.comune}`,
     nota: !r.addizionali.dovute
-      ? 'non dovuta: IRPEF netta pari a zero'
+      ? nonDovute
       : r.addizionali.comunale.esente
-        ? `esente: imponibile entro la soglia di ${euro0(REGOLE.addizionaleComunale.sogliaEsenzione)}`
-        : `${pct(REGOLE.addizionaleComunale.aliquota, 2)} sull'intero imponibile (soglia superata)`,
+        ? `non si paga: il reddito tassabile resta sotto ${soglia}`
+        : `${pct(REGOLE.addizionaleComunale.aliquota, 2)} — si paga perché il reddito tassabile supera ${soglia}`,
     importo: r.addizionali.comunale.importo,
     tipo: 'trattenuta',
   });
 
+  // --- Somme aggiunte in busta paga ----------------------------------------
   if (r.integrazioni.trattamentoIntegrativo > 0) {
     aggiungi({
       nome: 'Trattamento integrativo',
-      nota: 'somma non imponibile erogata in busta paga',
+      nota: 'un importo aggiunto in busta paga e non tassato, previsto per i redditi più bassi',
       importo: r.integrazioni.trattamentoIntegrativo,
       tipo: 'integrazione',
     });
@@ -222,16 +254,18 @@ function renderCascata(r) {
   if (r.integrazioni.sommaIntegrativa.importo > 0) {
     aggiungi({
       nome: 'Somma integrativa',
-      nota: `${pct(r.integrazioni.sommaIntegrativa.percentuale, 1)} del reddito di lavoro dipendente`,
+      nota: `il ${pct(r.integrazioni.sommaIntegrativa.percentuale, 1)} dello stipendio, aggiunto in busta paga e non tassato`,
       importo: r.integrazioni.sommaIntegrativa.importo,
       tipo: 'integrazione',
     });
   }
 
+  // --- Arrivo ---------------------------------------------------------------
   righe.push({
     classe: 'riga--finale',
     celle: [
-      `<span class="voce-nome">Netto annuo</span><span class="voce-nota">${euro2(r.nettoMensile)} × ${r.input.mensilita} mensilità</span>`,
+      '<span class="voce-nome">Quello che incassi in un anno</span>' +
+        `<span class="voce-nota">${euro2(r.nettoMensile)} al mese, per ${r.input.mensilita} mensilità</span>`,
       euro2(r.nettoAnnuo),
       '',
     ],
@@ -241,7 +275,9 @@ function renderCascata(r) {
     .map(
       (riga) =>
         `<tr class="${riga.classe}">${riga.celle
-          .map((c, i) => (i === 0 ? `<td>${c}</td>` : `<td class="num${i === 1 ? ' importo' : ''}">${c}</td>`))
+          .map((cella, i) =>
+            i === 0 ? `<td>${cella}</td>` : `<td class="num${i === 1 ? ' importo' : ''}">${cella}</td>`,
+          )
           .join('')}</tr>`,
     )
     .join('');

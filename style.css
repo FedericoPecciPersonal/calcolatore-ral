@@ -708,3 +708,8 @@ a { color: var(--accento); text-decoration-thickness: 1px; text-underline-offset
 }
 
 .esito-inverso--avvertenza strong { color: var(--c-contributi); }
+
+/* Parole-chiave colorate nella legenda testuale della cascata */
+.chiave { font-weight: 620; }
+.chiave--rosso { color: var(--negativo); }
+.chiave--verde { color: var(--positivo); }
