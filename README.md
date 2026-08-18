@@ -79,7 +79,7 @@ src/calcolo.js        motore di calcolo — funzioni pure, nessun accesso al DOM
 src/ui.js             unico file che tocca il DOM
 index.html            pagina
 style.css             stili (tema chiaro e scuro, nessun font remoto)
-test/calcolo.test.js  36 test con il runner integrato di Node
+test/calcolo.test.js  35 test con il runner integrato di Node
 .github/workflows/    CI: i test girano a ogni push
 docs/                 fonti normative e casi di prova calcolati a mano
 ```
@@ -172,7 +172,7 @@ dedicata proprio per non usare `Math.round` per distrazione.
 
 ## Verifica
 
-- **36 test** sul motore di calcolo, eseguiti dalla CI a ogni push: unità sulle singole
+- **35 test** sul motore di calcolo, eseguiti dalla CI a ogni push: unità sulle singole
   funzioni, comportamento ai confini di ogni scaglione e soglia, cinque scenari completi
   confrontati con i calcoli fatti a mano, l'insieme esatto delle sei discontinuità, andata
   e ritorno del calcolo inverso, e proprietà strutturali verificate su tutte le RAL da 0 a
