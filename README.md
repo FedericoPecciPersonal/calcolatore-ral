@@ -47,7 +47,7 @@ Poi apri <http://127.0.0.1:8765>.
 node --test 'test/*.test.js'
 ```
 
-25 test, nessuna dipendenza esterna: si usa il test runner integrato di Node.
+32 test, nessuna dipendenza esterna: si usa il test runner integrato di Node.
 
 ---
 

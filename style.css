@@ -11,7 +11,7 @@
   --bordo-forte:      #cfcec8;
   --testo:            #1c1c1a;
   --testo-tenue:      #5f5e59;
-  --testo-debole:     #8b8a84;
+  --testo-debole:     #6a6963;
   --accento:          #0f5c56;
   --accento-tenue:    #e6f0ee;
   --su-accento:       #ffffff;
@@ -49,7 +49,7 @@
     --bordo-forte:     #45453d;
     --testo:           #f0efe9;
     --testo-tenue:     #b0afa7;
-    --testo-debole:    #83827b;
+    --testo-debole:    #93928a;
     --accento:         #5cbfae;
     --accento-tenue:   #17302c;
     --su-accento:      #08201d;
@@ -74,7 +74,7 @@
     --bordo-forte:     #45453d;
     --testo:           #f0efe9;
     --testo-tenue:     #b0afa7;
-    --testo-debole:    #83827b;
+    --testo-debole:    #93928a;
     --accento:         #5cbfae;
     --accento-tenue:   #17302c;
     --su-accento:      #08201d;
@@ -930,4 +930,19 @@ a { color: var(--accento); text-decoration-thickness: 1px; text-underline-offset
   .tema label { padding-block: 14px; }
   .segmenti label { min-width: 48px; }
   .kpi-valore { font-size: 1.5rem; }
+}
+
+/* =============================================================================
+   DISPOSITIVI TOUCH DI QUALSIASI LARGHEZZA
+   Il breakpoint mobile e' a 620px, ma un tablet e' touch e riceve il layout
+   desktop: i suoi bersagli restavano fra 31 e 40px, sotto il minimo consigliato
+   di 44. Qui la condizione non e' la larghezza dello schermo ma il tipo di
+   puntatore, che e' la proprieta' davvero pertinente.
+   ========================================================================== */
+
+@media (pointer: coarse) {
+  .barra-controlli { --h-controllo: 52px; }
+  .segmenti label { min-width: 56px; }
+  .modalita label { padding-block: 12px; }
+  .tema label { padding-block: 13px; }
 }

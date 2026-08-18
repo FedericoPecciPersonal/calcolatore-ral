@@ -722,6 +722,19 @@ function calcolaEMostra() {
   const errore = el('errore');
   const { modo, importo, mensilita } = inputCorrenti();
 
+  // Il campo vuoto va distinto dallo zero: Number('') vale 0, e senza questo
+  // controllo svuotare il campo produceva una pagina intera di "0,00 €" invece
+  // di chiedere un importo.
+  if (el('importo').value.trim() === '') {
+    errore.textContent =
+      modo === 'netto'
+        ? 'Inserisci il netto mensile che vuoi ottenere.'
+        : 'Inserisci la retribuzione annua lorda.';
+    errore.hidden = false;
+    el('risultati').hidden = true;
+    return;
+  }
+
   if (!Number.isFinite(importo) || importo < 0) {
     errore.textContent =
       modo === 'netto'
