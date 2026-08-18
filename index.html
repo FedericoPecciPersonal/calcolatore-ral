@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dal lordo al netto — Calcolatore RAL 2026</title>
+<meta name="description" content="Calcolatore della retribuzione netta annuale e mensile a partire dalla RAL. Anno d'imposta 2026, impiegato a tempo indeterminato residente a Milano.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="intestazione">
+  <div class="contenitore">
+    <p class="etichetta">Prototipo · anno d'imposta 2026</p>
+    <h1>Dal lordo al netto</h1>
+    <p class="sottotitolo">
+      Quanto resta in tasca a un dipendente, e quali voci vengono trattenute lungo il percorso.
+    </p>
+    <ul class="ipotesi">
+      <li>Impiegato a tempo indeterminato</li>
+      <li>Residente a Milano (Lombardia)</li>
+      <li>Nessuna agevolazione o familiare a carico</li>
+    </ul>
+  </div>
+</header>
+
+<main class="contenitore">
+
+  <!-- ===================== INPUT ===================== -->
+  <form id="modulo" class="scheda scheda--input" novalidate>
+    <div class="griglia-input">
+      <div class="campo">
+        <label for="ral">Retribuzione annua lorda (RAL)</label>
+        <div class="input-valuta">
+          <span aria-hidden="true">€</span>
+          <input type="number" id="ral" name="ral" value="35000" min="0" max="1000000" step="100"
+                 inputmode="numeric" autocomplete="off" required>
+        </div>
+        <p class="aiuto">Importo su base annua, comprensivo delle mensilità aggiuntive.</p>
+      </div>
+
+      <div class="campo">
+        <label for="mensilita">Mensilità</label>
+        <select id="mensilita" name="mensilita">
+          <option value="12">12</option>
+          <option value="13" selected>13</option>
+          <option value="14">14</option>
+        </select>
+        <p class="aiuto">Incide sul netto mensile, non sul totale annuo.</p>
+      </div>
+
+      <button type="submit" class="bottone">Calcola</button>
+    </div>
+    <p id="errore" class="errore" role="alert" hidden></p>
+  </form>
+
+  <!-- ===================== RISULTATI ===================== -->
+  <section id="risultati" class="risultati" hidden aria-live="polite">
+
+    <!-- KPI -->
+    <div class="griglia-kpi">
+      <div class="kpi kpi--primario">
+        <p class="kpi-etichetta">Netto annuo</p>
+        <p class="kpi-valore" id="kpi-netto-annuo">—</p>
+        <p class="kpi-nota" id="kpi-netto-annuo-nota"></p>
+      </div>
+      <div class="kpi kpi--primario">
+        <p class="kpi-etichetta">Netto mensile</p>
+        <p class="kpi-valore" id="kpi-netto-mensile">—</p>
+        <p class="kpi-nota" id="kpi-netto-mensile-nota"></p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-etichetta">Tasse e contributi</p>
+        <p class="kpi-valore" id="kpi-trattenute">—</p>
+        <p class="kpi-nota" id="kpi-trattenute-nota"></p>
+      </div>
+    </div>
+
+    <!-- Barra di composizione -->
+    <div class="scheda">
+      <h2>Composizione della RAL</h2>
+      <div class="barra" id="barra" role="img" aria-label="Composizione della retribuzione lorda"></div>
+      <ul class="legenda" id="legenda"></ul>
+    </div>
+
+    <!-- Waterfall -->
+    <div class="scheda">
+      <h2>Cosa viene trattenuto, nell'ordine</h2>
+      <p class="descrizione">
+        Ogni riga è un passaggio della catena di calcolo. Le voci in rosso sono trattenute,
+        quelle in verde sono somme che si aggiungono al netto.
+      </p>
+      <table class="tabella" id="cascata">
+        <thead>
+          <tr>
+            <th scope="col">Voce</th>
+            <th scope="col" class="num">Importo</th>
+            <th scope="col" class="num">Progressivo</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Dettagli -->
+    <div class="griglia-dettagli">
+      <details class="scheda dettaglio">
+        <summary><h2>Dettaglio contributi INPS</h2></summary>
+        <div id="dettaglio-inps"></div>
+      </details>
+
+      <details class="scheda dettaglio">
+        <summary><h2>Dettaglio IRPEF per scaglione</h2></summary>
+        <div id="dettaglio-irpef"></div>
+      </details>
+
+      <details class="scheda dettaglio">
+        <summary><h2>Dettaglio detrazioni e integrazioni</h2></summary>
+        <div id="dettaglio-detrazioni"></div>
+      </details>
+
+      <details class="scheda dettaglio">
+        <summary><h2>Dettaglio addizionali locali</h2></summary>
+        <div id="dettaglio-addizionali"></div>
+      </details>
+    </div>
+
+    <!-- Costo azienda -->
+    <div class="scheda">
+      <h2>Dall'altra parte: quanto costa all'azienda</h2>
+      <p class="descrizione">
+        Stima <strong>prudenziale</strong>: include la quota INPS a carico del datore e
+        l'accantonamento TFR. Sono escluse le contribuzioni minori (CUAF, CIGS, DS) e il premio
+        INAIL, che dipendono da settore e classe di rischio. Il valore reale è quindi più alto.
+      </p>
+      <div id="dettaglio-costo"></div>
+    </div>
+
+  </section>
+
+  <!-- ===================== NOTE ===================== -->
+  <section class="scheda scheda--note">
+    <h2>Come leggere questo prototipo</h2>
+    <p>
+      Il calcolatore modella un caso standard e semplificato. Tutti i parametri normativi sono
+      isolati in un unico file (<code>src/regole-2026.js</code>), ciascuno con la propria fonte:
+      il motore di calcolo non contiene nessun numero hardcoded.
+    </p>
+    <p class="riferimenti">
+      Semplificazioni, limiti noti e fonti normative sono documentati nel
+      <a href="README.md">README</a> e in <a href="docs/FONTI.md">docs/FONTI.md</a>.
+      Non è uno strumento di consulenza fiscale.
+    </p>
+  </section>
+
+</main>
+
+<footer class="pie">
+  <div class="contenitore">
+    <p>Prototipo realizzato per un esercizio di product building · anno d'imposta 2026</p>
+  </div>
+</footer>
+
+<script type="module" src="src/ui.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "jethr-calcolatore-netto",
+  "version": "1.0.0",
+  "description": "Calcolatore RAL -> netto annuale e mensile, anno d'imposta 2026",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}
